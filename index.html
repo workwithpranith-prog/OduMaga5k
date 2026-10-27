@@ -782,14 +782,17 @@ const sfx={
     [['C3',0,4],['F3',4,3],['G3',7,2],['C3',9,6]].forEach(([n,k,l])=>tone('triangle',hz(n),t+k*q,q*l*.95,.4));}
 };
 const soundBtn=$('soundBtn');
-function paintSound(){soundBtn.textContent=AU.on?'♪ Sound on':'♪ Sound off';soundBtn.setAttribute('aria-pressed',String(AU.on));}
+function paintSound(){const live=AU.ctx&&AU.ctx.state==='running';soundBtn.textContent=!AU.on?'♪ Sound off':live?'♪ Sound on':'♪ Tap for music';soundBtn.setAttribute('aria-pressed',String(AU.on));}
 paintSound();
-soundBtn.addEventListener('click',()=>{AU.on=!AU.on;try{localStorage.setItem('nammarun.sound',AU.on?'on':'off');}catch(e){}if(AU.on)audioInit();if(AU.master)AU.master.gain.value=AU.on?.9:0;if(AU.on&&state!=='done')music.start();if(!AU.on)music.stop();paintSound();});
-// intro music: browsers only allow sound after the first tap or key press, so start on the first interaction
-function introMusic(){if(!AU.on)return;audioInit();if(AU.ctx&&AU.ctx.state!=='closed')music.start();}
-const firstTouch=()=>{introMusic();removeEventListener('pointerdown',firstTouch,true);removeEventListener('keydown',firstTouch,true);removeEventListener('touchend',firstTouch,true);};
-addEventListener('pointerdown',firstTouch,true);addEventListener('keydown',firstTouch,true);addEventListener('touchend',firstTouch,true);
-try{if(AU.on){audioInit();if(AU.ctx&&AU.ctx.state==='running')music.start();}}catch(e){}
+soundBtn.addEventListener('click',()=>{AU.on=!AU.on;try{localStorage.setItem('nammarun.sound',AU.on?'on':'off');}catch(e){}if(AU.on)audioInit();if(AU.master)AU.master.gain.value=AU.on?.9:0;if(AU.on&&state!=='done')music.start();if(!AU.on)music.stop();paintSound();if(AU.ctx)AU.ctx.resume().then(paintSound).catch(()=>{});});
+// intro music: browsers unlock sound only on a completed tap/click or a key press (finger-up, not finger-down),
+// so listen for those until the audio is actually running, then start the theme
+const UNLOCK_EVENTS=['pointerup','touchend','click','keydown'];
+function unlockAudio(){if(!AU.on)return;audioInit();if(!AU.ctx)return;try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){}
+  const go=()=>{if(AU.ctx.state!=='running')return;if(state!=='done'&&!AU.playing)music.start();UNLOCK_EVENTS.forEach(ev=>removeEventListener(ev,unlockAudio,true));paintSound();};
+  if(AU.ctx.state==='running')go();else AU.ctx.resume().then(go).catch(()=>{});}
+UNLOCK_EVENTS.forEach(ev=>addEventListener(ev,unlockAudio,true));
+try{if(AU.on){audioInit();if(AU.ctx&&AU.ctx.state==='running'){music.start();paintSound();}}}catch(e){}
 
 // ---------- flow ----------
 function startRace(){holdAt=1e12;$('greatRun').hidden=true;audioInit();music.stop();if(AU.on)music.start();lastBeep=null;newRace();camInit=false;$('startScreen').hidden=true;$('finishScreen').hidden=true;$('hud').hidden=false;$('paceBox').hidden=false;hud();state='count';countT=3.2;$('countdown').hidden=false;}
