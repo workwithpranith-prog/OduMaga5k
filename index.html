@@ -251,9 +251,21 @@ async function submitSB(name,time,pace){const r=await sb('scores',{method:'POST'
   const row=normSB((await r.json())[0]);let rank=null;
   try{const c=await sb(`scores?select=id&time_s=lt.${time}`,{headers:{Prefer:'count=exact',Range:'0-0'}});const n=countOf(c);if(n!=null)rank=n+1;}catch(_){}
   if(rank==null)rank=LB.rows.filter(x=>x.time<time).length+1;return{row,rank};}
+// --- anonymous run stats (no names): open, start, each km, finish, quit, submit ---
+const SESSION=(()=>{try{const a=new Uint8Array(9);crypto.getRandomValues(a);return Array.from(a,b=>b.toString(16).padStart(2,'0')).join('');}catch(e){return (String(Math.random()).slice(2)+'00000000').slice(0,16);}})();
+let runNo=0,quitSent=false;
+function track(event,extra={}){if(mode!=='supa')return;
+  let body={session:SESSION,run_no:runNo,event};
+  if(event!=='open'&&R){const c=R.counts||{};body={...body,dist_m:Math.round(Math.min(5000,Math.max(0,R.s||0))),clock_s:Math.round(Math.min(36000,R.clock||0)),
+    water:Math.min(20,c.water||0),gels:Math.min(20,c.gel||0),autos:c.auto||0,cows:c.cow||0,dogs:c.dog||0,taps:Math.min(200000,R.tapCount||0),min_energy:Math.round(Math.max(0,Math.min(100,R.minE??100)))};}
+  body={...body,...extra};
+  try{fetch(SUPA_URL.replace(/\/+$/,'')+'/rest/v1/run_events',{method:'POST',keepalive:true,headers:{apikey:SUPA_KEY,...(SUPA_KEY.startsWith('eyJ')?{Authorization:'Bearer '+SUPA_KEY}:{}),'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify(body)}).catch(()=>{});}catch(e){}}
+function markQuit(){if((state==='run'||state==='count')&&!quitSent&&runNo>0){quitSent=true;track('quit',{km:Math.max(0,R.kmToast-1)});}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')markQuit();});
+addEventListener('pagehide',markQuit);
 // --- pick the backend ---
 (async()=>{
-  if(SUPA_URL&&SUPA_KEY){mode='supa';renderBoards();refreshLB();setInterval(()=>{if(!document.hidden&&state!=='run'&&state!=='count')refreshLB();},30000);return;}
+  if(SUPA_URL&&SUPA_KEY){mode='supa';setTimeout(()=>track('open'),0);renderBoards();refreshLB();setInterval(()=>{if(!document.hidden&&state!=='run'&&state!=='count')refreshLB();},30000);return;}
   try{db=(window.claude&&window.claude.use)?await window.claude.use('db'):null;}catch(e){db=null;}
   if(!db){renderBoards();return;}
   mode='claude';
@@ -633,11 +645,11 @@ function buildCourse(seed){
 
 // ================= game state =================
 let lastBeep=null,holdAt=1e12;let state='loading',R=null,elapsed=0,lastNow=performance.now()/1000,countT=0,doneT=0,celebT=0;
-function newRace(){R={s:0,lat:0,lane:0,v:0,energy:100,boost:0,stumble:0,invuln:0,taps:[],lastTap:-9,clock:0,phase:0,lowWarned:false,kmToast:1,inCubbon:false,counts:{water:0,gel:0,auto:0,cow:0,dog:0}};buildCourse((Math.random()*1e9)|0);trophy.visible=false;celebT=0;}
+function newRace(){R={s:0,lat:0,lane:0,v:0,energy:100,boost:0,stumble:0,invuln:0,taps:[],lastTap:-9,clock:0,phase:0,lowWarned:false,kmToast:1,inCubbon:false,tapCount:0,minE:100,counts:{water:0,gel:0,auto:0,cow:0,dog:0}};buildCourse((Math.random()*1e9)|0);trophy.visible=false;celebT=0;}
 newRace();
 
 // ---------- input ----------
-function tap(){if(state!=='run')return;const now=performance.now()/1000;R.taps.push(now);R.lastTap=now;}
+function tap(){if(state!=='run')return;const now=performance.now()/1000;R.taps.push(now);R.lastTap=now;R.tapCount++;}
 function laneShift(d){if(state!=='run'&&state!=='count')return;const nl=Math.max(-1,Math.min(1,R.lane+d));if(nl!==R.lane)sfx.swipe(d);R.lane=nl;}
 let gest=null;
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();gest={id:e.pointerId,x:e.clientX,y:e.clientY,swiped:false};tap();});
@@ -659,14 +671,14 @@ function update(dt,now){
   const rate=target>R.v?42:30;R.v+=Math.max(-rate*dt,Math.min(rate*dt,target-R.v));
   if(state==='done')R.v=Math.max(0,R.v-45*dt);
   if(R.boost>0)R.boost-=dt;else if(R.v>1)R.energy-=(.3+(R.v/60)**2)*dt;else R.energy+=2*dt;
-  R.energy=Math.max(0,Math.min(100,R.energy));
+  R.energy=Math.max(0,Math.min(100,R.energy));if(state==='run')R.minE=Math.min(R.minE,R.energy);
   if(R.energy<25&&!R.lowWarned&&state==='run'){R.lowWarned=true;toast('Energy low. Grab water or a gel',2);}
   if(R.energy>40)R.lowWarned=false;
   if(R.stumble>0)R.stumble-=dt;if(R.invuln>0)R.invuln-=dt;
   R.s+=R.v*dt;
   if(state==='run'){R.clock+=dt*CLOCK;
     const u=R.s/RACE;const inC=isCubbon(u);if(inC&&!R.inCubbon)toast('Into Cubbon Park. Mind the dogs!',1.8);R.inCubbon=inC;
-    if(R.s>=R.kmToast*1000&&R.kmToast<5){toast(`${R.kmToast} km done · ${fmtTime(R.clock)}`,1.4);sfx.km();R.kmToast++;}
+    if(R.s>=R.kmToast*1000&&R.kmToast<5){toast(`${R.kmToast} km done · ${fmtTime(R.clock)}`,1.4);sfx.km();track('km',{km:R.kmToast});R.kmToast++;}
     if(R.s>=RACE){R.s=RACE;finishRace();}}
   R.lat+=(R.lane*LANE-R.lat)*Math.min(1,dt*12);
   for(const o of objs){
@@ -803,9 +815,9 @@ UNLOCK_EVENTS.forEach(ev=>addEventListener(ev,unlockAudio,true));
 try{if(AU.on){audioInit();if(AU.ctx&&AU.ctx.state==='running'){music.start();paintSound();}}}catch(e){}
 
 // ---------- flow ----------
-function startRace(){holdAt=1e12;$('greatRun').hidden=true;audioInit();music.stop();if(AU.on)music.start();lastBeep=null;newRace();camInit=false;$('startScreen').hidden=true;$('finishScreen').hidden=true;$('hud').hidden=false;$('paceBox').hidden=false;hud();state='count';countT=3.2;$('countdown').hidden=false;}
+function startRace(){holdAt=1e12;$('greatRun').hidden=true;audioInit();music.stop();if(AU.on)music.start();lastBeep=null;newRace();runNo++;quitSent=false;track('start',{km:0});camInit=false;$('startScreen').hidden=true;$('finishScreen').hidden=true;$('hud').hidden=false;$('paceBox').hidden=false;hud();state='count';countT=3.2;$('countdown').hidden=false;}
 let pb=null;try{const v=parseFloat(localStorage.getItem('nammarun5k.pb'));if(isFinite(v))pb=v;}catch(e){}
-function finishRace(){state='done';const t0=performance.now()/1000;holdAt=t0+3.4;doneT=holdAt+2.6;celebT=0;toast('Finish! Masala dosa + filter coffee earned',3);$('paceBox').hidden=true;music.stop();sfx.fanfare();}
+function finishRace(){state='done';track('finish',{km:5});const t0=performance.now()/1000;holdAt=t0+3.4;doneT=holdAt+2.6;celebT=0;toast('Finish! Masala dosa + filter coffee earned',3);$('paceBox').hidden=true;music.stop();sfx.fanfare();}
 function showFinish(){
   $('hud').hidden=true;
   const t=R.clock,pace=t/(RACE/1000);const isPB=pb==null||t<pb;if(isPB){pb=t;try{localStorage.setItem('nammarun5k.pb',String(t));}catch(e){}}
@@ -817,17 +829,18 @@ function showFinish(){
   $('submitBtn').disabled=false;try{const n=localStorage.getItem('nammarun.name');if(n)$('nameInput').value=n;}catch(e){}
   drawDosa2D();renderBoards();$('finishScreen').hidden=false;if(AU.on)music.start();
 }
-$('nameForm').addEventListener('submit',async e=>{e.preventDefault();if(!mode)return;
-  const name=$('nameInput').value.replace(/\s+/g,' ').trim().slice(0,20);if(!name){$('saveStatus').textContent='Add a name first.';return;}
+let submitting=false,savedRun=-1;
+$('nameForm').addEventListener('submit',async e=>{e.preventDefault();if(!mode||submitting||savedRun===runNo)return;submitting=true;
+  const name=$('nameInput').value.replace(/\s+/g,' ').trim().slice(0,20);if(!name){submitting=false;$('saveStatus').textContent='Add a name first.';return;}
   const time=Math.round(R.clock),pace=Math.round(R.clock/(RACE/1000));
   $('submitBtn').disabled=true;$('saveStatus').textContent='Saving…';
-  const done=(id,rank)=>{myId=id;myRank=rank;lastSubmitted={id,name,time,pace};try{localStorage.setItem('nammarun.name',name);}catch(_){}
+  const done=(id,rank)=>{savedRun=runNo;submitting=false;track('submit');myId=id;myRank=rank;lastSubmitted={id,name,time,pace};try{localStorage.setItem('nammarun.name',name);}catch(_){}
     $('saveStatus').textContent=rank?`Saved. You're #${rank} on the board.`:'Saved.';$('nameForm').hidden=true;$('saveNote').hidden=true;renderBoards();};
   if(mode==='supa'){try{const {row,rank}=await submitSB(name,time,pace);done(row.id,rank);refreshLB();}
-    catch(err){$('submitBtn').disabled=false;$('saveStatus').textContent=err&&err.status===400?"That time couldn't be saved. Check the name and try again.":'Could not save just now. Check your connection and tap Submit again.';}
+    catch(err){submitting=false;$('submitBtn').disabled=false;$('saveStatus').textContent=err&&err.status===400?"That time couldn't be saved. Check the name and try again.":'Could not save just now. Check your connection and tap Submit again.';}
     return;}
   try{const ref=db.collection(COLL).doc();await ref.set({name,time,pace});let rank=null;try{const better=await db.collection(COLL).where('time','<',time).get();rank=better.size+1;}catch(_){}done(ref.id,rank);}
-  catch(err){$('submitBtn').disabled=false;
+  catch(err){submitting=false;$('submitBtn').disabled=false;
     if(err&&err.code==='invalid_argument'){dbWritable=false;$('nameForm').hidden=true;$('saveNote').hidden=true;$('saveStatus').textContent="This view can only read the leaderboard, so your time wasn't saved.";}
     else if(err&&err.code==='quota_exceeded'){$('saveStatus').textContent='The leaderboard is full right now. Your time was not saved.';}
     else{$('saveStatus').textContent='Could not save just now. Try Submit again.';}}
