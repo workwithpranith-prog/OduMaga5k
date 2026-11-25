@@ -8,19 +8,17 @@ const MAKERS = {
   cart: makeCart,
   walkers: makeWalkers,
   steps: makeSteps,
-  cones: makeCones,
   racer: makeRacer
 };
-const MOVES = { auto: 10, walkers: 3, racer: 24 }; // metres per real second they move up the road
-const HIT = { auto: 6, cow: 3.6, dog: 3, cart: 4, walkers: 3, cones: 9, racer: 3 };
+const MOVES = { auto: 10, walkers: 3, racer: 24 }; // metres per real second they move up the road (o.speed overrides)
+const HIT = { auto: 6, cow: 3.6, dog: 3, cart: 4, walkers: 3, racer: 3 };
 const HIT_MSG = {
   auto: 'Auto cut in! Stumbled',
   cow: 'Cow on the road! Stumbled',
   dog: 'Street dog tripped you up!',
   cart: 'Ran into a food cart!',
   walkers: 'Bumped into the walkers!',
-  cones: 'Hit the cones!',
-  racer: 'Clipped a slower runner!'
+  racer: 'Bumped into another runner!'
 };
 function buildCourse(seed) {
   for (const o of objs) scene.remove(o.g);
@@ -251,7 +249,7 @@ function update(dt, now) {
   for (const o of objs) {
     if (o.gone) continue;
     let ds = o.s - R.s;
-    const mv = MOVES[o.type];
+    const mv = o.speed || MOVES[o.type];
     if (mv && !o.done && ds > -20 && ds < 320 && state === 'run') {
       o.s += mv * dt * SPD;
       ds = o.s - R.s;
@@ -290,7 +288,7 @@ function update(dt, now) {
     }
     if (o.type === 'dog' && o.g.userData.tail) o.g.userData.tail.rotation.z = Math.sin(elapsed * 14) * 0.6;
     if (o.type === 'racer' && !o.done) {
-      const ph = elapsed * 9 + o.s,
+      const ph = elapsed * (5 + (o.speed || 24) * 0.12) + (o.ph || 0), // quicker runners, quicker legs
         U2 = o.g.userData;
       U2.legs[0].rotation.x = Math.sin(ph) * 0.8;
       U2.legs[1].rotation.x = -Math.sin(ph) * 0.8;

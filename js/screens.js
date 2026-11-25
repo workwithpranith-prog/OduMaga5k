@@ -46,6 +46,8 @@ function loadCourse(id) {
     t.visible = t.userData.plateG.visible = t.userData.cf.visible = false;
   }
   trophy = TROPHIES[id];
+  runner.bib.visible = !!C.bib;
+  if (C.bib) paintBib(C.bib.event, C.bib.number);
   music.use(id);
   $('greatRun').textContent = C.cheer || 'GREAT RUN!';
   $('hTotal').textContent = String(C.km);

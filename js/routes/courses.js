@@ -173,10 +173,8 @@ const COURSES = {
     finishPhoto: true, // the photographer at the line takes your photo
     runOut: 28, // metres the runner can coast past the line into the finish area
     cheer: 'NICE RUN!', // the big end-of-race banner
-    hazards: [
-      ['racer', 'slower runner', 'slower runners'],
-      ['cones', 'cone', 'cones']
-    ],
+    bib: { event: 'ODU MAGA 10K', number: '1001' }, // race bib on the runner's tee
+    hazards: [['racer', 'runner', 'runners']],
     path: nicePath,
     elev() {
       const v = [];
@@ -198,15 +196,20 @@ const COURSES = {
           s += 60;
           continue;
         }
+        // a race field: everyone holds their own pace, about 5:00 to 9:20 per km (pace = 15000 / speed),
+        // sometimes in twos and threes across the road. Quicker ones pull away; slower ones you weave past.
         const lanes = [-1, 0, 1].sort(() => r() - 0.5),
-          k = r();
-        if (k < 0.5) out.push({ type: 'racer', s, lane: lanes[0] });
-        else if (k < 0.84) out.push({ type: 'cones', s, lane: lanes[0] });
-        else {
-          out.push({ type: 'racer', s, lane: lanes[0] });
-          out.push({ type: 'racer', s: s + 6, lane: lanes[1] });
-        }
-        s += 170 + r() * 120;
+          group = r() < 0.3 ? (r() < 0.4 ? 3 : 2) : 1,
+          pace = 300 + r() * 260;
+        for (let k = 0; k < group; k++)
+          out.push({
+            type: 'racer',
+            s: s + k * (1 + r() * 5),
+            lane: lanes[k],
+            speed: 15000 / (pace + (r() - 0.5) * 30),
+            ph: r() * 6
+          });
+        s += 110 + r() * 110;
       }
       return out;
     },

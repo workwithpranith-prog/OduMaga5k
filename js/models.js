@@ -53,6 +53,18 @@ function makeRunner() {
   sh.position.y = 0.04;
   g.add(sh);
   scene.add(g);
+  // race bib, front and back (routes with bib: true); paintBib() draws the number once the fonts are in
+  const bibTex = new THREE.CanvasTexture(document.createElement('canvas'));
+  bibTex.anisotropy = maxAniso;
+  const bibMat = new THREE.MeshLambertMaterial({ map: bibTex });
+  const bib = pivot(body, 0, 0, 0);
+  for (const sz of [1, -1]) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.34), bibMat);
+    m.position.set(0, 1.36, sz * 0.185);
+    if (sz < 0) m.rotation.y = Math.PI;
+    bib.add(m);
+  }
+  bib.visible = false;
   // finisher medal: ribbon round the neck and a gold disc on the chest (front of the runner is +z)
   const medal = pivot(body, 0, 0, 0);
   for (const sx of [-1, 1]) {
@@ -63,7 +75,7 @@ function makeRunner() {
   disc.rotation.x = Math.PI / 2;
   part(medal, 0.12, 0.12, 0.02, '#c9902a', 0, 1.25, 0.245);
   medal.visible = false;
-  return { g, body, legs, arms, medal };
+  return { g, body, legs, arms, medal, bib, bibTex };
 }
 function makeAuto() {
   const g = new THREE.Group();
@@ -319,38 +331,32 @@ function bumpAt(w) {
   if (w <= 1.5) return 0.45;
   return Math.max(0, 3 - Math.ceil((w - 1.5) / 0.7)) * 0.15;
 }
-// traffic cones closing a lane
-function makeCones() {
-  const g = new THREE.Group();
-  for (const z of [-2, 0, 2]) {
-    const c = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.9, 10), mk('#f0742a'));
-    c.position.set(0, 0.5, z);
-    g.add(c);
-    part(g, 0.62, 0.08, 0.62, '#1b1915', 0, 0.04, z);
-    part(g, 0.36, 0.1, 0.36, '#f7f2e6', 0, 0.55, z);
-  }
-  part(g, 0.1, 0.3, 4.4, '#f7f2e6', 0.32, 0.5, 0);
-  scene.add(g);
-  return g;
-}
-// a slower runner in a race tee with a bib
 function makeRacer() {
   const g = new THREE.Group(),
     body = pivot(g, 0, 0, 0);
   const tee = TEES[(Math.random() * 8) | 0],
     skin = TEXT_SKIN[(Math.random() * 4) | 0];
+  const shorts = ['#2b2724', '#3d4a61', '#1f3f8a', '#4a4a4a', '#7b3fa0'][(Math.random() * 5) | 0];
   part(body, 0.62, 0.72, 0.36, tee, 0, 1.32, 0);
-  part(body, 0.36, 0.3, 0.04, '#ffffff', 0, 1.3, 0.2);
-  part(body, 0.2, 0.08, 0.05, '#c63b2b', 0, 1.34, 0.22);
+  for (const sz of [1, -1]) {
+    part(body, 0.36, 0.3, 0.04, '#ffffff', 0, 1.3, sz * 0.2); // bib, front and back
+    part(body, 0.36, 0.06, 0.05, '#f0742a', 0, 1.42, sz * 0.205);
+    part(body, 0.18, 0.08, 0.05, '#16140f', 0, 1.28, sz * 0.215);
+  }
   part(body, 0.48, 0.48, 0.48, skin, 0, 1.94, 0);
   part(body, 0.5, 0.14, 0.5, '#16120f', 0, 2.22, 0);
+  const look = Math.random();
+  if (look < 0.3) {
+    part(body, 0.52, 0.12, 0.52, tee, 0, 2.28, 0); // cap
+    part(body, 0.4, 0.05, 0.28, tee, 0, 2.24, 0.34);
+  } else if (look < 0.6) part(body, 0.16, 0.34, 0.16, '#16120f', 0, 2.0, -0.3); // ponytail
   const legs = [],
     arms = [];
   for (const sx of [-1, 1]) {
     const L = pivot(body, sx * 0.16, 0.96, 0);
-    part(L, 0.27, 0.36, 0.29, '#2b2724', 0, -0.18, 0);
+    part(L, 0.27, 0.36, 0.29, shorts, 0, -0.18, 0);
     part(L, 0.2, 0.5, 0.2, skin, 0, -0.6, 0);
-    part(L, 0.26, 0.12, 0.38, '#f7f2e6', 0, -0.84, 0.05);
+    part(L, 0.26, 0.12, 0.38, TEES[(Math.random() * 8) | 0], 0, -0.84, 0.05);
     legs.push(L);
     const A = pivot(body, sx * 0.42, 1.6, 0);
     part(A, 0.2, 0.3, 0.22, tee, 0, -0.14, 0);
@@ -464,6 +470,25 @@ function makeTrophyNice() {
 }
 
 const runner = makeRunner();
+// draw the player's race bib: orange strip with the event, big number
+function paintBib(event, number) {
+  const c = document.createElement('canvas');
+  c.width = 230;
+  c.height = 170;
+  const g = c.getContext('2d');
+  g.fillStyle = '#ffffff';
+  g.fillRect(0, 0, 230, 170);
+  g.fillStyle = '#f0742a';
+  g.fillRect(0, 0, 230, 42);
+  g.fillStyle = '#16140f';
+  g.textAlign = 'center';
+  g.font = '400 28px Bungee, "Arial Black", sans-serif';
+  g.fillText(event, 115, 32);
+  g.font = '800 92px "JetBrains Mono", monospace';
+  g.fillText(number, 115, 140);
+  runner.bibTex.image = c;
+  runner.bibTex.needsUpdate = true;
+}
 const train = makeTrain();
 const TROPHIES = { cubbon: makeTrophy(), ulsoor: makeTrophyChai(), nice: makeTrophyNice() };
 let trophy = TROPHIES.cubbon;
