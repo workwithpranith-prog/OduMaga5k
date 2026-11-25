@@ -53,7 +53,34 @@ function makeRunner() {
   sh.position.y = 0.04;
   g.add(sh);
   scene.add(g);
-  return { g, body, legs, arms };
+  // race bib, front and back (routes with bib: true); paintBib() draws the number once the fonts are in
+  const bibTex = new THREE.CanvasTexture(document.createElement('canvas'));
+  bibTex.anisotropy = maxAniso;
+  const bibMat = new THREE.MeshLambertMaterial({ map: bibTex });
+  const bib = pivot(body, 0, 0, 0);
+  for (const sz of [1, -1]) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.34), bibMat);
+    m.position.set(0, 1.36, sz * 0.195);
+    if (sz < 0) m.rotation.y = Math.PI;
+    bib.add(m);
+  }
+  bib.visible = false;
+  // finisher medal: ribbon round the neck and a gold disc on the chest (front of the runner is +z)
+  const medal = pivot(body, 0, 0, 0);
+  for (const sx of [-1, 1]) {
+    const strap = part(medal, 0.08, 0.46, 0.03, '#2f6fb3', sx * 0.12, 1.5, 0.19);
+    strap.rotation.z = sx * 0.42;
+  }
+  const disc = cyl(medal, 0.15, 0.15, 0.05, '#e3b23c', 0, 1.25, 0.21, 16);
+  disc.rotation.x = Math.PI / 2;
+  part(medal, 0.12, 0.12, 0.02, '#c9902a', 0, 1.25, 0.245);
+  medal.visible = false;
+  // the tee gets its own material so its colour can change per run without touching anything else red
+  const teeMat = new THREE.MeshLambertMaterial({ color: TEE });
+  body.traverse(m => {
+    if (m.material === mk(TEE)) m.material = teeMat;
+  });
+  return { g, body, legs, arms, medal, bib, bibTex, teeMat };
 }
 function makeAuto() {
   const g = new THREE.Group();
@@ -309,38 +336,32 @@ function bumpAt(w) {
   if (w <= 1.5) return 0.45;
   return Math.max(0, 3 - Math.ceil((w - 1.5) / 0.7)) * 0.15;
 }
-// traffic cones closing a lane
-function makeCones() {
-  const g = new THREE.Group();
-  for (const z of [-2, 0, 2]) {
-    const c = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.9, 10), mk('#f0742a'));
-    c.position.set(0, 0.5, z);
-    g.add(c);
-    part(g, 0.62, 0.08, 0.62, '#1b1915', 0, 0.04, z);
-    part(g, 0.36, 0.1, 0.36, '#f7f2e6', 0, 0.55, z);
-  }
-  part(g, 0.1, 0.3, 4.4, '#f7f2e6', 0.32, 0.5, 0);
-  scene.add(g);
-  return g;
-}
-// a slower runner in a race tee with a bib
 function makeRacer() {
   const g = new THREE.Group(),
     body = pivot(g, 0, 0, 0);
   const tee = TEES[(Math.random() * 8) | 0],
     skin = TEXT_SKIN[(Math.random() * 4) | 0];
+  const shorts = ['#2b2724', '#3d4a61', '#1f3f8a', '#4a4a4a', '#7b3fa0'][(Math.random() * 5) | 0];
   part(body, 0.62, 0.72, 0.36, tee, 0, 1.32, 0);
-  part(body, 0.36, 0.3, 0.04, '#ffffff', 0, 1.3, 0.2);
-  part(body, 0.2, 0.08, 0.05, '#c63b2b', 0, 1.34, 0.22);
+  for (const sz of [1, -1]) {
+    part(body, 0.36, 0.3, 0.04, '#ffffff', 0, 1.3, sz * 0.2); // bib, front and back
+    part(body, 0.36, 0.06, 0.05, '#f0742a', 0, 1.42, sz * 0.205);
+    part(body, 0.18, 0.08, 0.05, '#16140f', 0, 1.28, sz * 0.215);
+  }
   part(body, 0.48, 0.48, 0.48, skin, 0, 1.94, 0);
   part(body, 0.5, 0.14, 0.5, '#16120f', 0, 2.22, 0);
+  const look = Math.random();
+  if (look < 0.3) {
+    part(body, 0.52, 0.12, 0.52, tee, 0, 2.28, 0); // cap
+    part(body, 0.4, 0.05, 0.28, tee, 0, 2.24, 0.34);
+  } else if (look < 0.6) part(body, 0.16, 0.34, 0.16, '#16120f', 0, 2.0, -0.3); // ponytail
   const legs = [],
     arms = [];
   for (const sx of [-1, 1]) {
     const L = pivot(body, sx * 0.16, 0.96, 0);
-    part(L, 0.27, 0.36, 0.29, '#2b2724', 0, -0.18, 0);
+    part(L, 0.27, 0.36, 0.29, shorts, 0, -0.18, 0);
     part(L, 0.2, 0.5, 0.2, skin, 0, -0.6, 0);
-    part(L, 0.26, 0.12, 0.38, '#f7f2e6', 0, -0.84, 0.05);
+    part(L, 0.26, 0.12, 0.38, TEES[(Math.random() * 8) | 0], 0, -0.84, 0.05);
     legs.push(L);
     const A = pivot(body, sx * 0.42, 1.6, 0);
     part(A, 0.2, 0.3, 0.22, tee, 0, -0.14, 0);
@@ -419,30 +440,90 @@ function makeTrophyChai() {
   g.userData.steam = steam;
   return g;
 }
-function makeTrophyCoconut() {
+// NICE Road: the race breakfast. Plate: three idlis, coconut and tomato chutney, a banana. In the other hand: tender coconut water.
+function makeTrophyNice() {
   const g = trophyBase(),
     { spin, cf } = g.userData;
-  const leaf = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.03, 1.7), new THREE.MeshLambertMaterial({ map: TEX.leaf }));
-  leaf.position.y = 0.04;
-  leaf.rotation.y = -0.35;
-  spin.add(leaf);
-  cyl(spin, 0.62, 0.82, 1.2, '#5c9a2e', 0, 0.68, 0, 10);
-  cyl(spin, 0.3, 0.62, 0.42, '#7fb33e', 0, 1.49, 0, 10);
-  cyl(spin, 0.3, 0.3, 0.04, '#e9eecf', 0, 1.71, 0, 10);
-  const straw = cyl(spin, 0.05, 0.05, 1.1, '#ff3fa4', 0.1, 2.1, 0, 8);
-  straw.rotation.z = -0.35;
-  for (let k = 0; k < 3; k++) {
-    const b = pivot(cf, 0, 0, (k - 1) * 0.22);
-    for (let j = 0; j < 4; j++) {
-      const m = part(b, 0.34, 0.2, 0.2, '#f2d23a', -0.45 + j * 0.3, 0.12 + Math.abs(j - 1.5) * 0.08, 0);
-      m.rotation.z = (j - 1.5) * 0.25;
-    }
-    part(b, 0.1, 0.1, 0.12, '#5e3e25', -0.66, 0.28, 0);
+  cyl(spin, 1.38, 1.3, 0.09, '#c3c7cb', 0, 0.1, 0, 24); // steel plate
+  for (const [x, z] of [
+    [-0.45, 0.25],
+    [0.2, 0.45],
+    [-0.05, -0.15]
+  ]) {
+    cyl(spin, 0.42, 0.4, 0.22, '#f4f1e6', x, 0.25, z, 16); // idli
+    cyl(spin, 0.36, 0.36, 0.02, '#e8e2cf', x, 0.37, z, 16);
   }
+  cyl(spin, 0.32, 0.25, 0.2, '#c3c7cb', 0.75, 0.24, -0.35, 14);
+  cyl(spin, 0.28, 0.28, 0.03, '#eef0dc', 0.75, 0.34, -0.35, 14); // coconut chutney
+  part(spin, 0.08, 0.04, 0.06, '#2f6f26', 0.7, 0.37, -0.3);
+  cyl(spin, 0.28, 0.22, 0.18, '#c3c7cb', 0.65, 0.23, 0.45, 14);
+  cyl(spin, 0.24, 0.24, 0.03, '#cf3f26', 0.65, 0.32, 0.45, 14); // tomato chutney
+  const ban = pivot(spin, -0.55, 0.22, -0.75);
+  ban.rotation.y = 0.4;
+  for (let j = 0; j < 5; j++) {
+    const m = part(ban, 0.3, 0.18, 0.2, '#f2d23a', -0.6 + j * 0.28, Math.abs(j - 2) * 0.06, 0);
+    m.rotation.z = (j - 2) * 0.22;
+  }
+  part(ban, 0.1, 0.1, 0.12, '#5e3e25', -0.82, 0.16, 0);
+  // tender coconut with a straw
+  cyl(cf, 0.36, 0.48, 0.7, '#5c9a2e', 0, 0.35, 0, 10);
+  cyl(cf, 0.18, 0.36, 0.25, '#7fb33e', 0, 0.82, 0, 10);
+  cyl(cf, 0.18, 0.18, 0.03, '#e9eecf', 0, 0.95, 0, 10);
+  const straw = cyl(cf, 0.035, 0.035, 0.7, '#ff3fa4', 0.06, 1.2, 0, 8);
+  straw.rotation.z = -0.3;
   return g;
 }
 
 const runner = makeRunner();
+// draw the player's race bib: orange strip with the event, big number
+function paintBib(event, number) {
+  const c = document.createElement('canvas');
+  c.width = 230;
+  c.height = 170;
+  const g = c.getContext('2d');
+  g.fillStyle = '#ffffff';
+  g.fillRect(0, 0, 230, 170);
+  g.fillStyle = '#f0742a';
+  g.fillRect(0, 0, 230, 42);
+  g.fillStyle = '#16140f';
+  g.textAlign = 'center';
+  g.font = '400 28px Bungee, "Arial Black", sans-serif';
+  g.fillText(event, 115, 32);
+  g.font = '800 92px "JetBrains Mono", monospace';
+  g.fillText(number, 115, 140);
+  runner.bibTex.image = c;
+  runner.bibTex.needsUpdate = true;
+}
+// race kit (routes with randomKit: true): a new tee colour and bib number every run, so every finish photo differs
+const KIT_TEES = [
+  '#ef3b2d',
+  '#2f6fb3',
+  '#2bb3a8',
+  '#7b4bd0',
+  '#e8457a',
+  '#1f8a4c',
+  '#f2c230',
+  '#16140f',
+  '#ef7a2d',
+  '#5c6bc0'
+];
+let kit = { tee: TEE, bib: '1001' };
+function newKit() {
+  let tee;
+  do tee = KIT_TEES[(Math.random() * KIT_TEES.length) | 0];
+  while (tee === kit.tee);
+  kit = { tee, bib: String(1001 + Math.floor(Math.random() * 8999)) };
+  applyKit();
+}
+function defaultKit() {
+  kit = { tee: TEE, bib: C.bib ? C.bib.number : '1001' };
+  applyKit();
+}
+function applyKit() {
+  runner.teeMat.color.set(kit.tee);
+  runner.bib.visible = !!C.bib;
+  if (C.bib) paintBib(C.bib.event, kit.bib);
+}
 const train = makeTrain();
-const TROPHIES = { cubbon: makeTrophy(), ulsoor: makeTrophyChai(), nice: makeTrophyCoconut() };
+const TROPHIES = { cubbon: makeTrophy(), ulsoor: makeTrophyChai(), nice: makeTrophyNice() };
 let trophy = TROPHIES.cubbon;

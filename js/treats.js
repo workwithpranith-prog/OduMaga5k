@@ -171,63 +171,78 @@ function drawHoneyCake(c) {
   c.stroke();
   c.restore();
 }
-function drawCoconut(c) {
+// NICE Road race breakfast: idlis with coconut and tomato chutney, a banana, and tender coconut water
+function drawNiceBreakfast(c) {
+  const circ = (x, y, r, f, st) => {
+    c.beginPath();
+    c.arc(x, y, r, 0, 6.283);
+    c.fillStyle = f;
+    c.fill();
+    if (st) {
+      c.strokeStyle = st;
+      c.lineWidth = 0.8;
+      c.stroke();
+    }
+  };
+  circ(40, 58, 34, '#c3c7cb', '#8f959b'); // steel plate
+  circ(40, 58, 29, '#d6d9dc');
+  for (const [x, y] of [
+    [28, 56],
+    [44, 66],
+    [46, 48]
+  ]) {
+    circ(x, y, 10, '#f4f1e6', '#d8d2bf'); // idli
+    circ(x - 2, y - 2, 4, '#fbf9f2');
+  }
+  circ(24, 36, 7, '#c3c7cb', '#8f959b');
+  circ(24, 36, 5.6, '#eef0dc'); // coconut chutney
+  c.fillStyle = '#2f6f26';
+  c.fillRect(22, 34, 3, 1.4);
+  circ(60, 74, 6.5, '#c3c7cb', '#8f959b');
+  circ(60, 74, 5, '#cf3f26'); // tomato chutney
   c.save();
-  c.translate(42, 56);
-  c.fillStyle = '#3f8f32';
+  c.translate(48, 92);
+  c.strokeStyle = '#f2d23a';
+  c.lineWidth = 5;
+  c.lineCap = 'round';
   c.beginPath();
-  c.ellipse(0, 26, 34, 9, 0, 0, 6.283);
-  c.fill();
+  c.arc(0, -22, 20, 0.6 * Math.PI, 0.95 * Math.PI); // banana
+  c.stroke();
+  c.fillStyle = '#5e3e25';
+  c.fillRect(-21, -17, 4, 4);
+  c.restore();
+  // tender coconut with a straw
+  c.save();
+  c.translate(82, 62);
   c.fillStyle = '#5c9a2e';
   c.beginPath();
-  c.moveTo(-22, 22);
-  c.lineTo(-26, -4);
-  c.lineTo(-16, -22);
-  c.lineTo(16, -22);
-  c.lineTo(26, -4);
-  c.lineTo(22, 22);
+  c.moveTo(-12, 22);
+  c.lineTo(-14, 2);
+  c.lineTo(-8, -10);
+  c.lineTo(8, -10);
+  c.lineTo(14, 2);
+  c.lineTo(12, 22);
   c.closePath();
   c.fill();
   c.fillStyle = '#7fb33e';
   c.beginPath();
-  c.moveTo(-16, -22);
-  c.lineTo(-9, -32);
-  c.lineTo(9, -32);
-  c.lineTo(16, -22);
+  c.moveTo(-8, -10);
+  c.lineTo(-4, -16);
+  c.lineTo(4, -16);
+  c.lineTo(8, -10);
   c.closePath();
   c.fill();
   c.fillStyle = '#e9eecf';
   c.beginPath();
-  c.ellipse(0, -32, 9, 3, 0, 0, 6.283);
+  c.ellipse(0, -16, 4.5, 1.6, 0, 0, 6.283);
   c.fill();
-  c.strokeStyle = '#4a7d24';
-  c.lineWidth = 0.8;
-  for (const x of [-12, 0, 12]) {
-    c.beginPath();
-    c.moveTo(x, -20);
-    c.lineTo(x * 1.2, 20);
-    c.stroke();
-  }
   c.strokeStyle = '#ff3fa4';
-  c.lineWidth = 3;
+  c.lineWidth = 2;
   c.beginPath();
-  c.moveTo(2, -31);
-  c.lineTo(12, -50);
-  c.lineTo(18, -50);
+  c.moveTo(1, -16);
+  c.lineTo(6, -28);
+  c.lineTo(10, -28);
   c.stroke();
-  c.restore();
-  c.save();
-  c.translate(80, 74);
-  for (let k = 0; k < 3; k++) {
-    c.strokeStyle = ['#e8c232', '#f2d23a', '#f6dc55'][k];
-    c.lineWidth = 6;
-    c.lineCap = 'round';
-    c.beginPath();
-    c.arc(0, -22 + k * 4, 20, 0.55 * Math.PI, 0.95 * Math.PI);
-    c.stroke();
-  }
-  c.fillStyle = '#5e3e25';
-  c.fillRect(-21, -19, 5, 5);
   c.restore();
 }
 function drawTreat2D(canvas, id) {
@@ -237,7 +252,7 @@ function drawTreat2D(canvas, id) {
   c.save();
   c.scale(S / 100, S / 100);
   if (id === 'ulsoor') drawHoneyCake(c);
-  else if (id === 'nice') drawCoconut(c);
+  else if (id === 'nice') drawNiceBreakfast(c);
   else drawDosaOn(c);
   c.restore();
 }

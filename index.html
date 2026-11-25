@@ -52,6 +52,7 @@
     <div id="toast" role="status" aria-live="polite"></div>
     <div id="countdown" hidden></div>
     <div id="greatRun" hidden>GREAT RUN!</div>
+    <div id="flash" aria-hidden="true"></div>
     <button class="sound" id="soundBtn" aria-pressed="true">♪ Sound on</button>
 
     <div class="overlay" id="startScreen">
@@ -123,6 +124,10 @@
           <div class="eyebrow" id="fWhere">Finish</div>
           <h2 id="fHead">Done</h2>
         </div>
+        <figure class="photo" id="photoWrap" hidden>
+          <img id="photoImg" alt="Your finish-line photo, with your time" />
+          <figcaption>Your finish-line photo. Save image keeps a copy.</figcaption>
+        </figure>
         <div class="trophy">
           <canvas id="dosaCanvas" width="224" height="224"></canvas>
           <div><b id="tTitle">Masala dosa + filter coffee</b><span id="tText"></span></div>
@@ -220,6 +225,7 @@
     <script src="js/models.js"></script>
     <script src="js/race.js"></script>
     <script src="js/hud.js"></script>
+    <script src="js/photo.js"></script>
     <script src="js/treats.js"></script>
     <script src="js/audio.js"></script>
     <script src="js/screens.js"></script>

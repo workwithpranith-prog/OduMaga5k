@@ -217,7 +217,15 @@ $('waBtn').addEventListener('click', () => {
 $('saveImg').addEventListener('click', async () => {
   if (!lastRun) return;
   try {
-    const f = await getShareFile();
+    const f = lastRun.photo
+      ? new File(
+          [await new Promise(r => lastRun.photo.toBlob(r, 'image/jpeg', 0.92))],
+          `odu-maga-${lastRun.route}-finish.jpg`,
+          {
+            type: 'image/jpeg'
+          }
+        )
+      : await getShareFile();
     const a = document.createElement('a');
     a.href = URL.createObjectURL(f);
     a.download = f.name;

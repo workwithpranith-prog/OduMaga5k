@@ -8,19 +8,17 @@ const MAKERS = {
   cart: makeCart,
   walkers: makeWalkers,
   steps: makeSteps,
-  cones: makeCones,
   racer: makeRacer
 };
-const MOVES = { auto: 10, walkers: 3, racer: 24 }; // metres per real second they move up the road
-const HIT = { auto: 6, cow: 3.6, dog: 3, cart: 4, walkers: 3, cones: 9, racer: 3 };
+const MOVES = { auto: 10, walkers: 3, racer: 24 }; // metres per real second they move up the road (o.speed overrides)
+const HIT = { auto: 6, cow: 3.6, dog: 3, cart: 4, walkers: 3, racer: 3 };
 const HIT_MSG = {
   auto: 'Auto cut in! Stumbled',
   cow: 'Cow on the road! Stumbled',
   dog: 'Street dog tripped you up!',
   cart: 'Ran into a food cart!',
   walkers: 'Bumped into the walkers!',
-  cones: 'Hit the cones!',
-  racer: 'Clipped a slower runner!'
+  racer: 'Bumped into another runner!'
 };
 function buildCourse(seed) {
   for (const o of objs) scene.remove(o.g);
@@ -94,7 +92,10 @@ function newRace() {
     climb: 0,
     hillT: 0,
     seen: {},
-    counts: { water: 0, gel: 0, auto: 0, cow: 0, dog: 0 }
+    aidDone: {},
+    aidWarn: {},
+    photoPending: false,
+    counts: { water: 0, gel: 0, aid: 0, auto: 0, cow: 0, dog: 0 }
   };
   buildCourse((Math.random() * 1e9) | 0);
   trophy.visible = false;
@@ -182,7 +183,7 @@ function update(dt, now) {
   if (R.invuln > 0) R.invuln -= dt;
   const s0 = R.s;
   R.s += R.v * dt * SPD;
-  if (state === 'done' && FRAC < 1) R.s = Math.min(R.s, RACE);
+  if (state === 'done' && FRAC < 1) R.s = Math.min(R.s, RACE + (C.runOut || 0)); // coast into the finish area, no further
   if (ELEV && state === 'run') R.climb += Math.max(0, elevM(R.s) - elevM(s0));
   if (state === 'run') {
     R.clock += dt * CLOCK;
@@ -209,6 +210,28 @@ function update(dt, now) {
         R.hillT = 14;
       }
     }
+    // aid stations (NICE): a table on the left every 2 km; be in the left lane as you pass it to grab a drink
+    if (C.aid)
+      C.aid.forEach((as, i) => {
+        const d = R.s - as;
+        if (!R.aidWarn[i] && d > -260 && d < -120) {
+          R.aidWarn[i] = 1;
+          toast(`Aid station ahead on your left · KM ${as / 1000}`, 2);
+        }
+        if (!R.aidDone[i] && Math.abs(d) < 12 && R.lane === -1) {
+          R.aidDone[i] = 1;
+          R.energy = Math.min(100, R.energy + 35);
+          R.boost = Math.max(R.boost, 2);
+          R.counts.aid++;
+          R.counts.water++;
+          toast('Aid station: water + electrolytes · +35 energy');
+          sfx.water();
+        }
+        if (!R.aidDone[i] && d >= 12) {
+          R.aidDone[i] = 2;
+          toast('Missed the aid station! Keep left next time', 1.8);
+        }
+      });
     if (R.s >= R.kmToast * 1000 && R.kmToast < C.km) {
       toast(`${R.kmToast} km done · ${fmtTime(R.clock)}`, 1.4);
       sfx.km();
@@ -226,7 +249,7 @@ function update(dt, now) {
   for (const o of objs) {
     if (o.gone) continue;
     let ds = o.s - R.s;
-    const mv = MOVES[o.type];
+    const mv = o.speed || MOVES[o.type];
     if (mv && !o.done && ds > -20 && ds < 320 && state === 'run') {
       o.s += mv * dt * SPD;
       ds = o.s - R.s;
@@ -265,7 +288,7 @@ function update(dt, now) {
     }
     if (o.type === 'dog' && o.g.userData.tail) o.g.userData.tail.rotation.z = Math.sin(elapsed * 14) * 0.6;
     if (o.type === 'racer' && !o.done) {
-      const ph = elapsed * 9 + o.s,
+      const ph = elapsed * (5 + (o.speed || 24) * 0.12) + (o.ph || 0), // quicker runners, quicker legs
         U2 = o.g.userData;
       U2.legs[0].rotation.x = Math.sin(ph) * 0.8;
       U2.legs[1].rotation.x = -Math.sin(ph) * 0.8;
@@ -365,13 +388,19 @@ function place(dt) {
       R.stumble > 0 ? Math.sin(R.stumble * 18) * 0.3 + 0.2 : Math.min(0.16, R.v / 450) + R.grade * 2.5;
   }
   runner.g.visible = !(R.invuln > 0 && R.stumble <= 0 && Math.floor(elapsed * 14) % 2 === 0);
+  runner.medal.visible = !!C.medal && state === 'done' && celebT > 0.15;
+  if (R.photoPending) {
+    R.photoPending = false;
+    takeFinishPhoto(); // the runner is on the line this frame
+  }
   // trophy: the route's treat rises above the runner at the finish
   const tnow = performance.now() / 1000,
     TU = trophy.userData;
-  trophy.visible = TU.plateG.visible = TU.cf.visible = state === 'done' && celebT > 0;
+  const TD = treatDelay(); // with a medal, it goes on first and the treat follows
+  trophy.visible = TU.plateG.visible = TU.cf.visible = state === 'done' && celebT > TD;
   let hold = 0;
   if (trophy.visible) {
-    const t = Math.min(1, celebT * 1.6),
+    const t = Math.min(1, (celebT - TD) * 1.6),
       e = 1 - Math.pow(1 - t, 3),
       sc = 0.15 + 0.85 * e,
       ry = Math.atan2(fr.tx, fr.tz);
