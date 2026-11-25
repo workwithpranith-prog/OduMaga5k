@@ -123,7 +123,6 @@ input{flex:1 1 180px;min-width:0;font:700 17px var(--body);padding:10px;backgrou
 .challenge b{font-family:var(--display);font-weight:400;font-size:14px}
 .sharebtns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .sbtn{appearance:none;border:2px solid #0d0c09;background:var(--ink);color:var(--auto);font:400 14px var(--display);padding:9px 8px;cursor:pointer;box-shadow:3px 3px 0 rgba(0,0,0,.35)}
-.sbtn.main{grid-column:1/-1;background:var(--run);color:#fff;font-size:18px;padding:11px}
 .sbtn:active{transform:translate(1px,1px);box-shadow:2px 2px 0 rgba(0,0,0,.35)}
 .sbtn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .sbtn.done{background:#2f8f5b;color:#fff}
@@ -196,11 +195,6 @@ input{flex:1 1 180px;min-width:0;font:700 17px var(--body);padding:10px;backgrou
       <div><span class="k">Your PB</span><b id="fPB">–</b></div>
     </div>
     <div class="tally" id="fTally"></div>
-    <div class="share">
-      <span>Share your run and dare your friends to beat it</span>
-      <div class="sharebtns"><button class="sbtn main" id="shareBtn" type="button">Share</button><button class="sbtn" id="waBtn" type="button">WhatsApp</button><button class="sbtn" id="copyLink" type="button">Copy link</button><button class="sbtn" id="saveImg" type="button">Save image</button></div>
-      <div class="hrow"><span>Posting on Instagram? Tag</span><b id="handle">@yourrunningbro</b><button class="copybtn" id="copyHandle" type="button">Copy</button></div>
-    </div>
     <form id="nameForm" autocomplete="off">
       <label for="nameInput">Your name for the leaderboard</label>
       <input id="nameInput" name="runnername" maxlength="20" required placeholder="e.g. Pranith">
@@ -208,6 +202,11 @@ input{flex:1 1 180px;min-width:0;font:700 17px var(--body);padding:10px;backgrou
     </form>
     <div class="note" id="saveNote">Only your name and time are saved.</div>
     <div class="status" id="saveStatus" role="status"></div>
+    <div class="share">
+      <span>Share your run and dare your friends to beat it</span>
+      <div class="sharebtns"><button class="sbtn" id="shareBtn" type="button">Share</button><button class="sbtn" id="waBtn" type="button">WhatsApp</button><button class="sbtn" id="copyLink" type="button">Copy link</button><button class="sbtn" id="saveImg" type="button">Save image</button></div>
+      <div class="hrow"><span>Posting on Instagram? Tag</span><b id="handle">@yourrunningbro</b><button class="copybtn" id="copyHandle" type="button">Copy</button></div>
+    </div>
     <div id="fullWrap">
       <h3 id="fullTitle">Leaderboard</h3>
       <div class="boardWrap"><div class="board" id="fullBoard"><div class="empty">Loading times…</div></div></div>
@@ -262,6 +261,7 @@ let FRAC=1;               // share of the drawn loop the race uses (less than 1 
 let CLOCK=15;             // race clock runs CLOCK x real time so paces read like real running
 let SPD=1;                // world speed multiplier that keeps pace = taps, whatever CLOCK is
 let HAS_ELEV=false;
+let START_U=0;             // where on the drawn loop the race starts and finishes
 
 // ================= helpers =================
 const fmtTime=sec=>{sec=Math.max(0,Math.round(sec));const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;return h?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${m}:${String(s).padStart(2,'0')}`;};
@@ -498,7 +498,7 @@ function nearestFast(x,z){const cx=Math.floor(x/GC),cz=Math.floor(z/GC);let bd=I
   return bi<0?nearest(x,z,4):{d:Math.sqrt(bd),i:bi};}
 function inPolyXZ(x,z,xs,zs){let c=false;for(let i=0,j=xs.length-1;i<xs.length;j=i++){if(((zs[i]>z)!==(zs[j]>z))&&(x<(xs[j]-xs[i])*(z-zs[i])/(zs[j]-zs[i])+xs[i]))c=!c;}return c;}
 const inR=(u,a,b)=>{u=((u%1)+1)%1;return a<=b?(u>=a&&u<=b):(u>=a||u<=b);};
-const uOf=s=>s/RACE*FRAC;          // race metres -> position on the drawn loop
+const uOf=s=>{const u=s/RACE*FRAC+START_U;return u-Math.floor(u);};   // race metres -> position on the drawn loop
 
 // ---------- elevation (from Strava), in race metres ----------
 let ELEV=null,ELEV_MIN=0,EXAG=1;
@@ -506,7 +506,7 @@ function elevM(s){if(!ELEV)return 0;const v=ELEV.v,n=v.length;const f=Math.max(0
   const p0=v[Math.max(0,i-1)],p1=v[i],p2=v[i+1],p3=v[Math.min(n-1,i+2)];
   return .5*(2*p1+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t*t+(-p0+3*p1-3*p2+p3)*t*t*t);}
 const hS=s=>ELEV?(elevM(s)-ELEV_MIN)/DM*EXAG:0;                         // world height under race metre s
-const hU=u=>{if(!ELEV)return 0;u=((u%1)+1)%1;return hS(Math.min(RACE,u/FRAC*RACE));};
+const hU=u=>{if(!ELEV)return 0;u=(((u-START_U)%1)+1)%1;return hS(Math.min(RACE,u/FRAC*RACE));};
 const gradeAt=s=>ELEV?(elevM(s+20)-elevM(s-20))/40:0;                  // real rise over run, for the pace maths
 function groundH(x,z){if(!HAS_ELEV)return 0;const n=nearestFast(x,z);const h=hU(n.i/N);return C&&C.groundAt?C.groundAt(x,z,h,n.d):h;}
 
@@ -694,7 +694,9 @@ function cubbonScenery(){
 const ULS_Z=[[0,.13,'path'],[.13,.41,'road'],[.41,.73,'path'],[.73,.81,'road'],[.81,1,'path']];
 const ulsZone=u=>{u=((u%1)+1)%1;for(const z of ULS_Z)if(u>=z[0]&&u<z[1])return z[2];return'path';};
 let LAKE={xs:[],zs:[]},WATER_Y=0;
-function ulsoorPrep(){const f={},xs=[],zs=[];let mn=1e9;for(let i=0;i<N;i+=6){const u=i/N;frame(u,f);xs.push(f.x+f.rx*IN*8.6);zs.push(f.z+f.rz*IN*8.6);mn=Math.min(mn,hU(u));}LAKE={xs,zs};WATER_Y=mn-.9;}
+const ULS_START=.905;   // start/finish on the straight just past the Gurudwara (share of the lap from the GPS start)
+const ULS_BANK=6.4;     // lake edge, from the middle of the running lanes
+function ulsoorPrep(){const f={},xs=[],zs=[];let mn=1e9;for(let i=0;i<N;i+=6){const u=i/N;frame(u,f);xs.push(f.x+f.rx*IN*ULS_BANK);zs.push(f.z+f.rz*IN*ULS_BANK);mn=Math.min(mn,hU(u));}LAKE={xs,zs};WATER_Y=mn-.9;}
 function foodStall(u,lat,kind){const {R,c,ry}=site(u,lat,4);
   if(kind==='chai'){R('cream',3.2,2.4,2.2,0,0,0);R('red',3.8,.3,2.8,0,2.4,0);R('wood',3.2,.9,.6,0,0,1.3);R('white',.3,.4,.3,-.8,.9,1.3);R('white',.3,.4,.3,.8,.9,1.3);plaque(c,ry,1.12,2.0,['CHAI'],1.6,.5,'#c63b2b','#ffffff');}
   else{R('wood',2.4,.9,1.4,0,.5,0);R('dark',.5,.5,.2,-.8,0,.7);R('dark',.5,.5,.2,.8,0,.7);R('bark',.12,2.4,.12,0,1.4,0);R(kind==='corn'?'gold':'saffron',3,.2,3,0,3.8,0);R(kind==='corn'?'gold':'white',1.6,.4,.8,0,1.4,0);}
@@ -705,16 +707,18 @@ function buildUlsoor(){
   // running surface: footpath pavers or road, by stretch
   for(const [a,b,k] of ULS_Z)ribbon(a,b,-4.1,4.1,.04,k==='road'?matAsphalt:matPav,k==='road'?3:2);
   laneDashes(ULS_Z.filter(z=>z[2]==='road').map(z=>[z[0],z[1]]));
-  // lake side: kerb, grass verge, green railing with teal posts, stone bund down into the water
+  // lake side: kerb, a thin grass verge, a low see-through railing, then the stone bund and the water
   ribbon(0,1,ls(4.1),ls(4.65),.24,matKerb,1.2);wall(0,1,ls(4.1),.03,.24,matKerb,1.2);
-  ribbon(0,1,ls(4.65),ls(8.6),.2,matGrass,1.5);wall(0,1,ls(5.2),.2,1.45,matRail,1.6,true);wall(0,1,ls(8.6),-4,.2,matStone,2);
-  for(let s=0;s<LOOP;s+=5){const u=s/LOOP;frame(u,f);BASEY=hU(u);box('teal',.3,1.5,.3,f.x+f.rx*ls(5.2),.15,f.z+f.rz*ls(5.2));}BASEY=null;
+  ribbon(0,1,ls(4.65),ls(ULS_BANK),.2,matGrass,1.5);wall(0,1,ls(5.6),.2,1.15,matRail,1.6,true);wall(0,1,ls(ULS_BANK),-4,.2,matStone,2);
+  for(let s=0;s<LOOP;s+=10){const u=s/LOOP;frame(u,f);BASEY=hU(u);box('teal',.26,1.15,.26,f.x+f.rx*ls(5.6),.15,f.z+f.rz*ls(5.6));}BASEY=null;
+  // pedal boats and coracles out on the water
+  for(let u=.42;u<1.12;u+=.03){frame(u,f);const l=ls(16+srnd()*40);const x=f.x+f.rx*l,z=f.z+f.rz*l;if(!inPolyXZ(x,z,LAKE.xs,LAKE.zs))continue;BASEY=WATER_Y;const ry=srnd()*6.28,col=['gold','blue','red','white'][(srnd()*4)|0];box(col,1.8,.6,2.6,x,0,z,ry);box('white',1.6,.7,.2,x,.5,z,ry);box('bark',.4,.4,.4,x,.9,z,ry);}BASEY=null;
   // the water
   {const sh=new THREE.Shape();LAKE.xs.forEach((x,i)=>i?sh.lineTo(x,-LAKE.zs[i]):sh.moveTo(x,-LAKE.zs[i]));const g=new THREE.ShapeGeometry(sh);const uv=g.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)/5,uv.getY(i)/5);
     const wm=new THREE.Mesh(g,matWater);wm.rotation.x=-Math.PI/2;wm.position.y=WATER_Y;world.add(wm);}
   // islands
   {let cx=0,cz=0;LAKE.xs.forEach((x,i)=>{cx+=x;cz+=LAKE.zs[i];});cx/=LAKE.xs.length;cz/=LAKE.zs.length;
-    for(const [dx,dz,r] of [[-14,-38,13],[20,22,9],[-6,64,7]]){const x=cx+dx,z=cz+dz;if(!inPolyXZ(x,z,LAKE.xs,LAKE.zs))continue;
+    for(const [dx,dz,r] of [[-14,-38,16],[22,24,12],[-6,66,9]]){const x=cx+dx,z=cz+dz;if(!inPolyXZ(x,z,LAKE.xs,LAKE.zs))continue;
       const isl=new THREE.Mesh(new THREE.CylinderGeometry(r,r+2.5,1.8,20),matGrass);isl.position.set(x,WATER_Y+.15,z);world.add(isl);
       BASEY=WATER_Y+1.05;for(let k=0;k<Math.max(2,Math.round(r/3));k++){const a=srnd()*6.28,d=srnd()*r*.6;canopyTree(x+Math.cos(a)*d,z+Math.sin(a)*d);}
       box('rock',3,1,2.4,x+r*.6,-.4,z+r*.3,.5);BASEY=null;}}
@@ -741,11 +745,11 @@ function buildUlsoor(){
   // army kayaks out on the water
   for(let u=.17;u<.36;u+=.035){frame(u,f);const l=ls(18+srnd()*22);const x=f.x+f.rx*l,z=f.z+f.rz*l;if(!inPolyXZ(x,z,LAKE.xs,LAKE.zs))continue;BASEY=WATER_Y;const ry=Math.atan2(f.tx,f.tz)+(srnd()-.5);box('army',.7,.22,3.4,x,0,z,ry);box('army',.5,.6,.36,x,.2,z,ry);box('bark',.36,.36,.36,x,.8,z,ry);box('gold',.1,.08,2.6,x,.55,z,ry+1.57);}BASEY=null;
   // Kempegowda watch tower on its rock at the water's edge
-  {const {R,c,ry}=site(.455,ls(13.5),9);BASEY=WATER_Y-.3;R('rock',8,2.2,7,0,0,0);R('rock',5,1.2,5,1,2.2,-.6);R('granite',4.4,.5,4.4,0,2.4,0);for(const [sx,sz] of[[1,1],[1,-1],[-1,1],[-1,-1]])R('granite',.55,3.2,.55,sx*1.7,2.9,sz*1.7);
-    R('granite',5,.5,5,0,6.1,0);R('granite',3.8,.6,3.8,0,6.6,0);R('granite',2.6,.6,2.6,0,7.2,0);R('granite',1.4,.7,1.4,0,7.8,0);R('gold',.35,.7,.35,0,8.5,0);BASEY=null;
+  {const {R,c,ry}=site(.455,ls(12),9);BASEY=WATER_Y-.3;R('rock',9,2.6,8,0,0,0);R('rock',6,1.4,6,1,2.6,-.6);R('granite',5.6,.6,5.6,0,3,0);for(const [sx,sz] of[[1,1],[1,-1],[-1,1],[-1,-1]])R('granite',.7,4.4,.7,sx*2.2,3.6,sz*2.2);
+    R('granite',6.4,.6,6.4,0,8,0);R('granite',5,.8,5,0,8.6,0);R('granite',3.6,.8,3.6,0,9.4,0);R('granite',2.2,.9,2.2,0,10.2,0);R('gold',.5,1,.5,0,11.1,0);BASEY=null;
     roadsideSign(.44,ls(6.6),['KEMPEGOWDA','WATCH TOWER'],2.6,1.1,'#5b3a1f','#f2e7c2');}
   // boat club jetty with pedal boats
-  {const {R}=site(.525,ls(14.5),8);BASEY=WATER_Y+.2;R('wood',3,.3,11.6,0,0,0);for(let z=-5;z<=5;z+=2.5){R('bark',.3,1.2,.3,1.6,-.9,z);R('bark',.3,1.2,.3,-1.6,-.9,z);}
+  {const {R}=site(.525,ls(12.2),8);BASEY=WATER_Y+.2;R('wood',3,.3,11.6,0,0,0);for(let z=-5;z<=5;z+=2.5){R('bark',.3,1.2,.3,1.6,-.9,z);R('bark',.3,1.2,.3,-1.6,-.9,z);}
     for(const [x,z,col] of [[-3.4,-3,'gold'],[3.4,-1,'blue'],[-3.4,1.5,'red'],[3.6,3.2,'gold']]){R(col,1.8,.6,2.6,x,-.2,z);R('white',1.6,.7,.2,x,.4,z-1.1);}BASEY=null;
     roadsideSign(.51,ls(6.6),['BOAT CLUB','Ulsoor Lake'],2.6,1.1,'#2f6fb3','#ffffff');}
   // Kensington Road side: the public swimming pool
@@ -762,9 +766,9 @@ function buildUlsoor(){
     R('marble',1.6,.8,1.6,13.5,1.2,10);R('saffron',.4,22,.4,13.5,2,10);R('saffron',4.2,2.6,.1,11.2,20.4,10);R('gold',.5,.8,.5,13.5,24,10);
     plaque(c,ry,9.92,8.9,['SRI GURU SINGH SABHA','GURUDWARA'],8,1.3,'#f6f3ec','#1f3f8a',{sizes:[44,34]});BASEY=null;}
   // food carts and a chai stall near the Gurudwara
-  foodStall(.925,os(17.5),'chai');foodStall(.955,os(17.5),'corn');foodStall(.985,os(17.5),'puri');foodStall(.06,os(17.5),'corn');
+  foodStall(.815,os(17.5),'chai');foodStall(.83,os(17.5),'corn');foodStall(.845,os(17.5),'puri');foodStall(.06,os(17.5),'corn');
   // signage
-  startArch(0,'ODU MAGA 3K');
+  startArch(uOf(0),'ODU MAGA 3K');
   gantry(.137,['MEG ROAD','Army area · autos ahead'],'#3d4a24');
   gantry(.416,['ULSOOR LAKE','Footpath · mind the steps'],'#2b5d8a');
   gantry(.55,['KENSINGTON ROAD','Ulsoor Lake'],'#1f6b3a');
@@ -772,7 +776,7 @@ function buildUlsoor(){
   for(let k=1;k<3;k++)roadsideSign(uOf(k*1000),ls(6.6),[`KM ${k}`],1.8,1.1,'#f2c230','#1b1915');
   // scenery
   for(let s=0;s<LOOP;s+=4){const u=s/LOOP,z=ulsZone(u),k=(s/4)|0;frame(u,f);const ry=Math.atan2(f.tx,f.tz);
-    if(k%4===0){const x=f.x+f.rx*ls(7),zz=f.z+f.rz*ls(7);if(!FOOT.some(q=>Math.hypot(q.x-x,q.z-zz)<q.r+3))(k%8?avenueTree:palm)(x,zz);}
+    if(k%14===0){const x=f.x+f.rx*ls(5.1),zz=f.z+f.rz*ls(5.1);if(!FOOT.some(q=>Math.hypot(q.x-x,q.z-zz)<q.r+3))palm(x,zz);}
     if(inR(u,.14,.40)){if(k%5===0){const x=f.x+f.rx*os(15),zz=f.z+f.rz*os(15);if(clearOf(x,zz,6))canopyTree(x,zz);}continue;}
     if(k%3===(z==='road'?0:1)){const off=z==='road'?8.6:16.2;const x=f.x+f.rx*os(off),zz=f.z+f.rz*os(off);if(clearOf(x,zz,z==='road'?7.6:7))(z==='road'?avenueTree:canopyTree)(x,zz);}
     if(k%2===0){const w=6+srnd()*5,d=6+srnd()*5,h=4+srnd()*12;const off=(z==='road'?9.5:17.5)+d/2;const x=f.x+f.rx*os(off),zz=f.z+f.rz*os(off);if(clearOf(x,zz,Math.max(w,d)/2+7)){box('wall'+((srnd()*WALLS.length)|0),w,h,d,x,0,zz,ry);if(srnd()<.4)box('dark',1.4,1.2,1.4,x,h,zz);}}
@@ -890,15 +894,17 @@ const COURSES={
     build(){cityRoad();cubbonRailings();laneDashes([[0,1]]);landmarks();cubbonMetro();cubbonSigns();cubbonScenery();},
     zoneOf:u=>isCubbon(u)?'cubbon':isVS(u)?'vs':isMG(u)?'mg':'city',zoneMsg:{cubbon:'Into Cubbon Park. Mind the dogs!'},
     obstacles:cubbonObstacles,pickups:{water:[650,1500,2350,3200,4050],gel:[350,1050,1800,2600,3400,4300]}},
-  ulsoor:{id:'ulsoor',name:'Ulsoor Lake',km:3,race:3000,clock:15,sky:0xb3dcf0,fog:[60,170],exag:1.4,
+  ulsoor:{id:'ulsoor',name:'Ulsoor Lake',km:3,race:3000,clock:15,sky:0xb3dcf0,fog:[70,270],exag:1.4,
     eyebrow:'MEG & Centre · Kempegowda Tower · Kensington Road · Gurudwara',
     tagline:'One lap round the lake on the footpath and the road: army tanks, the watch tower and the Gurudwara.',
     meta:'Near flat · steps, food carts, walkers',finishAt:'Ulsoor Lake',color:'#2f7f8f',
     treat:{title:'Honey cake + masala chai',text:'Your finish-line trophy: a slab of bakery honey cake with jam and coconut, and a hot glass of masala chai.',toast:'Finish! Honey cake + masala chai earned',short:'honey cake and masala chai'},
     pbKey:'odumaga.pb.ulsoor',hazards:[['cart','food cart','food carts'],['walkers','walker','walkers'],['auto','auto','autos'],['dog','dog','dogs']],
-    path(){ORIGIN={lat:ULS_GPS[0][0],lng:ULS_GPS[0][1]};return{raw:smoothPts(ULS_GPS.map(p=>projM(p[0],p[1])),3,true)};},
-    elev(){return{step:50,v:ULS_ELEV.slice()};},
-    prep:ulsoorPrep,groundAt:(x,z,h)=>inPolyXZ(x,z,LAKE.xs,LAKE.zs)?WATER_Y-1.6:h,
+    path(){ORIGIN={lat:ULS_GPS[0][0],lng:ULS_GPS[0][1]};return{raw:smoothPts(ULS_GPS.map(p=>projM(p[0],p[1])),5,true)};},
+    elev(){const n=ULS_ELEV.length-1,o=ULS_START*n,v=[];for(let k=0;k<=n;k++){const f=(k+o)%n,i=Math.floor(f),a=f-i;v.push(ULS_ELEV[i]+(ULS_ELEV[i+1]-ULS_ELEV[i])*a);}return{step:50,v};},
+    startU:ULS_START,cam:{out:1.6,lake:3.6,up:.9},
+    sights:[[.17,'On your right: a WWII tank at MEG & Centre'],[.235,'MEG & Centre: home of the Madras Sappers'],[.31,'Sappers War Memorial on your right'],[.43,'Kempegowda watch tower, out on the lake to your left'],[.505,'Ulsoor boat club on your left'],[.59,'Kensington Road. Swimming pool on your right'],[.845,'Sri Guru Singh Sabha Gurudwara on your right']],
+    prep:ulsoorPrep,groundAt:(x,z,h)=>inPolyXZ(x,z,POLY.xs,POLY.zs)?WATER_Y-1.6:h,   // everything inside the loop is lake bed, so no bank hides the water
     build:buildUlsoor,
     zoneOf:u=>ulsZone(u),zoneMsg:{road:'On the road. Watch for autos!',path:'Back on the footpath. Steps and carts!'},
     obstacles(r){const out=[];let s=220,steps=0;
@@ -1062,7 +1068,7 @@ function buildCourse(seed){
 
 // ================= game state =================
 let lastBeep=null,holdAt=1e12;let state='loading',R=null,elapsed=0,lastNow=performance.now()/1000,countT=0,doneT=0,celebT=0;
-function newRace(){R={s:0,lat:0,lane:0,v:0,energy:100,boost:0,stumble:0,invuln:0,taps:[],lastTap:-9,clock:0,phase:0,lowWarned:false,kmToast:1,zone:null,tapCount:0,minE:100,bump:0,onSteps:false,grade:0,climb:0,hillT:0,counts:{water:0,gel:0,auto:0,cow:0,dog:0}};buildCourse((Math.random()*1e9)|0);trophy.visible=false;celebT=0;}
+function newRace(){R={s:0,lat:0,lane:0,v:0,energy:100,boost:0,stumble:0,invuln:0,taps:[],lastTap:-9,clock:0,phase:0,lowWarned:false,kmToast:1,zone:null,tapCount:0,minE:100,bump:0,onSteps:false,grade:0,climb:0,hillT:0,seen:{},counts:{water:0,gel:0,auto:0,cow:0,dog:0}};buildCourse((Math.random()*1e9)|0);trophy.visible=false;celebT=0;}
 
 // ---------- input ----------
 function tap(){if(state!=='run')return;const now=performance.now()/1000;R.taps.push(now);R.lastTap=now;R.tapCount++;}
@@ -1100,6 +1106,7 @@ function update(dt,now){
   if(ELEV&&state==='run')R.climb+=Math.max(0,elevM(R.s)-elevM(s0));
   if(state==='run'){R.clock+=dt*CLOCK;
     const u=uOf(R.s),zn=C.zoneOf(u);if(zn!==R.zone){if(R.zone!==null&&C.zoneMsg[zn])toast(C.zoneMsg[zn],1.8);R.zone=zn;}
+    if(C.sights)C.sights.forEach(([su,msg],i)=>{if(!R.seen[i]&&(((su-u)%1)+1)%1<.04){R.seen[i]=1;toast(msg,2.6);}});
     R.hillT-=dt;if(ELEV&&R.hillT<=0&&toastT<=0){if(g>.022){toast('Uphill! Energy drains faster',1.6);R.hillT=14;}else if(g<-.022){toast('Downhill. Free speed!',1.4);R.hillT=14;}}
     if(R.s>=R.kmToast*1000&&R.kmToast<C.km){toast(`${R.kmToast} km done · ${fmtTime(R.clock)}`,1.4);sfx.km();track('km',{km:R.kmToast});R.kmToast++;}
     if(R.s>=RACE){R.s=RACE;finishRace();}}
@@ -1161,7 +1168,8 @@ function place(dt){
   // camera: chase from behind (riding the hills with you); at the finish swing round to face the runner
   let tx,ty,tz,lx,ly,lz;const cy=hS(R.s-7.6*DM),ly0=hS(R.s+9*DM);
   if(state==='done'&&celebT>0){const a=Math.min(1,celebT*.7);const bx=x-fr.tx*7.6,bz=z-fr.tz*7.6,fx=x+fr.tx*8+fr.rx*1.6,fz=z+fr.tz*8+fr.rz*1.6;tx=bx+(fx-bx)*a;tz=bz+(fz-bz)*a;ty=4.1+a*.6+gy;lx=x+fr.tx*2.2*a*(1-hold);lz=z+fr.tz*2.2*a*(1-hold);ly=1.3+a*.4+hold*.9+gy;}
-  else{tx=x-fr.tx*7.6;tz=z-fr.tz*7.6;ty=4.1+Math.max(cy,gy-.8);lx=x+fr.tx*9;lz=z+fr.tz*9;ly=1.3+(gy+ly0)/2;}
+  else{tx=x-fr.tx*7.6;tz=z-fr.tz*7.6;ty=4.1+Math.max(cy,gy-.8);lx=x+fr.tx*9;lz=z+fr.tz*9;ly=1.3+(gy+ly0)/2;
+    if(C.cam){const so=-IN*C.cam.out,sl=IN*C.cam.lake;tx+=fr.rx*so;tz+=fr.rz*so;lx+=fr.rx*sl;lz+=fr.rz*sl;ty+=C.cam.up||0;}}   // Ulsoor: sit a little wide so the lake fills the left of the frame
   if(!camInit){camPos.set(tx,ty,tz);camLook.set(lx,ly,lz);camInit=true;}
   const k=Math.min(1,dt*7);camPos.x+=(tx-camPos.x)*k;camPos.z+=(tz-camPos.z)*k;camPos.y+=(ty-camPos.y)*k;camLook.x+=(lx-camLook.x)*k;camLook.z+=(lz-camLook.z)*k;camLook.y+=(ly-camLook.y)*k;
   camera.position.copy(camPos);camera.lookAt(camLook);
@@ -1292,7 +1300,7 @@ try{if(AU.on){audioInit();if(AU.ctx&&AU.ctx.state==='running'){music.start();pai
 const PBS={};
 function pbOf(id){if(!(id in PBS)){let v=null;try{const x=parseFloat(localStorage.getItem(COURSES[id].pbKey));if(isFinite(x))v=x;}catch(e){}PBS[id]=v;}return PBS[id];}
 function loadCourse(id){
-  C=COURSES[id]||COURSES.cubbon;id=C.id;RACE=C.race;CLOCK=C.clock||15;SPD=CLOCK/15;EXAG=C.exag||1;
+  C=COURSES[id]||COURSES.cubbon;id=C.id;RACE=C.race;START_U=C.startU||0;CLOCK=C.clock||15;SPD=CLOCK/15;EXAG=C.exag||1;
   ELEV=C.elev?C.elev():null;HAS_ELEV=!!ELEV;ELEV_MIN=ELEV?Math.min(...ELEV.v):0;
   clearWorld();FOOT.length=0;srnd=mulberry32(560001);BASEY=null;
   const p=C.path();setPath(p.raw,p.raceRaw);if(C.prep)C.prep();
@@ -1372,7 +1380,7 @@ let shareImg=null;
 function routeSketch(g,x,y,w,h){let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;const n=Math.floor(N*FRAC);for(let i=0;i<n;i+=4){x0=Math.min(x0,PX[i]);x1=Math.max(x1,PX[i]);z0=Math.min(z0,PZ[i]);z1=Math.max(z1,PZ[i]);}
   const sc=Math.min(w/(x1-x0||1),h/(z1-z0||1)),ox=x+(w-(x1-x0)*sc)/2,oy=y+(h-(z1-z0)*sc)/2;
   g.lineJoin=g.lineCap='round';for(const [col,lw] of [['#16140f',22],['#f2c230',10]]){g.strokeStyle=col;g.lineWidth=lw;g.beginPath();for(let i=0;i<=n;i+=4){const j=Math.min(i,n-1);const px=ox+(PX[j]-x0)*sc,py=oy+(PZ[j]-z0)*sc;i?g.lineTo(px,py):g.moveTo(px,py);}g.stroke();}
-  g.fillStyle='#ef3b2d';g.beginPath();g.arc(ox+(PX[0]-x0)*sc,oy+(PZ[0]-z0)*sc,16,0,6.283);g.fill();g.strokeStyle='#fff';g.lineWidth=5;g.stroke();}
+  const si=Math.floor(START_U*N)%N;g.fillStyle='#ef3b2d';g.beginPath();g.arc(ox+(PX[si]-x0)*sc,oy+(PZ[si]-z0)*sc,16,0,6.283);g.fill();g.strokeStyle='#fff';g.lineWidth=5;g.stroke();}
 function makeShareImage(){return new Promise(res=>{const {c,url}=shareInfo(),L=lastRun;const W=1080,H=1920,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
   g.fillStyle='#16140f';g.fillRect(0,0,W,H);g.fillStyle=c.color;g.fillRect(0,0,W,700);
   g.fillStyle='rgba(0,0,0,.18)';for(let y=0;y<700;y+=24)g.fillRect(0,y,W,8);
