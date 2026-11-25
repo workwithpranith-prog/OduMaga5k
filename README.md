@@ -25,7 +25,7 @@ On a laptop: space bar to run, arrow keys to change lanes.
 - One file: `index.html`. No build step.
 - 3D: [three.js](https://threejs.org/) r128, loaded from cdnjs.
 - Music and sound effects: an original chiptune for each route, generated live with the Web Audio API.
-- Leaderboard: a [Supabase](https://supabase.com/) table (`scores`: name, time, pace, route, posted at). Anyone can read and add scores; nobody can edit or delete them through the site. Per-route boards need the `route` column from `supabase/add_route_column.sql`.
+- Leaderboard: a [Supabase](https://supabase.com/) table (`scores`: name, time, pace, route, posted at). Anyone can read and add scores; nobody can edit or delete them through the site. Per-route boards use the `route` column added by `supabase/add_route_column.sql`.
 - Hosting: [Netlify](https://www.netlify.com/), deployed from this repo.
 
 Made by [@yourrunningbro](https://www.instagram.com/yourrunningbro/).
