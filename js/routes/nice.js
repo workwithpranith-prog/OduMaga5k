@@ -114,7 +114,8 @@ function buildNice() {
   startArch(0, 'ODU MAGA 10K', -6.8, 2 * o + 6.8, {
     front: ['ODU MAGA', 'by @yourrunningbro'],
     back: ['ODU MAGA 10K', 'FINISH'],
-    res: 1600
+    res: 1600,
+    bg: '#f0742a' // orange arch on race day
   });
   buildNiceFinish();
   for (let k = 1; k < 10; k++) {
@@ -297,7 +298,7 @@ function buildNice() {
 // ---------- NICE finish area ----------
 // Red carpet over the last stretch, a finish zone with people standing about, a photographer on a riser
 // on the median, and barricades closing the road behind it.
-let PHOTOG = null; // where the photographer's camera is, and the arch centre it frames (read by photo.js)
+let PHOTOG = null; // where the photographer's camera is (read by photo.js)
 function buildNiceFinish() {
   const o = NOFF,
     f = {},
@@ -346,13 +347,10 @@ function buildNiceFinish() {
     const fwd = { x: Math.sin(p.ry), z: Math.cos(p.ry) }; // towards the finish line
     box('dark', 0.36, 0.3, 0.3, p.x + fwd.x * 0.35, 3.24, p.z + fwd.z * 0.35, p.ry);
     box('white', 0.22, 0.16, 0.12, p.x + fwd.x * 0.35, 3.5, p.z + fwd.z * 0.35, p.ry);
-    const arch = frame(0, {});
     PHOTOG = {
       x: p.x + fwd.x * 0.6,
       y: p.h + 3.4,
-      z: p.z + fwd.z * 0.6,
-      ax: arch.x + arch.rx * o,
-      az: arch.z + arch.rz * o
+      z: p.z + fwd.z * 0.6
     };
     FOOT.push({ x: p.x, z: p.z, r: 3 });
   }

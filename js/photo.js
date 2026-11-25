@@ -1,10 +1,10 @@
 'use strict';
 // ================= finish-line photo (routes with finishPhoto: true) =================
-// As you cross the line, a second camera at the photographer's spot (PHOTOG, set by the route) renders the scene
-// off-screen: you, the arch and its "by @yourrunningbro" credit. The flash fires, and the photo turns up on the
-// finish screen with your time stamped on it.
-const PHOTO_W = 1200,
-  PHOTO_H = 900;
+// As you cross the line, a second camera at the photographer's spot (PHOTOG, set by the route) zooms in on you
+// and renders off-screen, in Instagram-story shape. The flash fires, and the photo turns up on the finish screen
+// with an orange "ODU MAGA by @yourrunningbro" banner and your time stamped on it.
+const PHOTO_W = 1080,
+  PHOTO_H = 1920;
 let photoRT = null,
   photoCam = null,
   finishPhoto = null, // { canvas, run } for the latest run
@@ -18,14 +18,14 @@ function takeFinishPhoto() {
   if (!PHOTOG) return;
   if (!photoRT) {
     photoRT = new THREE.WebGLRenderTarget(PHOTO_W, PHOTO_H);
-    photoCam = new THREE.PerspectiveCamera(58, PHOTO_W / PHOTO_H, 0.1, 500);
+    photoCam = new THREE.PerspectiveCamera(15, PHOTO_W / PHOTO_H, 0.1, 500); // a long lens: close-up from the riser
   }
   const f = frame(uOf(R.s), {}),
     gy = hS(R.s),
     rx = f.x + f.rx * R.lat,
     rz = f.z + f.rz * R.lat;
   photoCam.position.set(PHOTOG.x, PHOTOG.y, PHOTOG.z);
-  photoCam.lookAt(rx * 0.65 + PHOTOG.ax * 0.35, gy + 3.4, rz * 0.65 + PHOTOG.az * 0.35); // the runner, with the arch's credit above
+  photoCam.lookAt(rx, gy + 1.3, rz); // centred on the runner
   renderer.setRenderTarget(photoRT);
   renderer.render(scene, photoCam);
   const px = new Uint8Array(PHOTO_W * PHOTO_H * 4);
@@ -63,43 +63,49 @@ function tickFlash(dt) {
   flashLight.intensity = flashT > 0 ? 6 * (flashT / 0.35) : 0;
 }
 
-// the photo with a race-photo strip: route, time, pace and the credit
+// the story-sized photo card: orange credit banner on top, time and pace stamped at the bottom
 function photoCard(run) {
   const c = document.createElement('canvas'),
     W = PHOTO_W,
     H = PHOTO_H;
   c.width = W;
   c.height = H;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d'),
+    info = COURSES[run.route];
   g.drawImage(finishPhoto.canvas, 0, 0);
-  const grad = g.createLinearGradient(0, H - 260, 0, H);
-  grad.addColorStop(0, 'rgba(22,20,15,0)');
-  grad.addColorStop(0.45, 'rgba(22,20,15,.82)');
-  grad.addColorStop(1, 'rgba(22,20,15,.95)');
-  g.fillStyle = grad;
-  g.fillRect(0, H - 260, W, 260);
-  const info = COURSES[run.route];
+  // banner, like the arch: orange, with a dark border and a slight tilt
+  g.save();
+  g.translate(W / 2, 250);
+  g.rotate(-0.035);
+  g.fillStyle = '#f0742a';
+  g.fillRect(-470, -120, 940, 240);
+  g.strokeStyle = '#16140f';
+  g.lineWidth = 10;
+  g.strokeRect(-470, -120, 940, 240);
+  g.fillStyle = '#16140f';
+  g.textAlign = 'center';
   g.textBaseline = 'alphabetic';
+  g.font = '400 118px Bungee, "Arial Black", sans-serif';
+  g.fillText('ODU MAGA', 0, 22);
+  g.font = '700 56px "Pixelify Sans", "Courier New", monospace';
+  g.fillText('by @yourrunningbro', 0, 92);
+  g.restore();
+  // results strip
+  const grad = g.createLinearGradient(0, H - 560, 0, H);
+  grad.addColorStop(0, 'rgba(22,20,15,0)');
+  grad.addColorStop(0.4, 'rgba(22,20,15,.85)');
+  grad.addColorStop(1, 'rgba(22,20,15,.96)');
+  g.fillStyle = grad;
+  g.fillRect(0, H - 560, W, 560);
   g.textAlign = 'left';
+  g.fillStyle = '#ffffff';
+  g.font = '700 40px "JetBrains Mono", monospace';
+  g.fillText('● FINISH', 70, H - 330);
+  g.font = '800 230px "JetBrains Mono", monospace';
+  g.fillText(fmtTime(run.time), 56, H - 130);
   g.fillStyle = '#f2c230';
-  g.font = '400 52px Bungee, "Arial Black", sans-serif';
-  g.fillText('ODU MAGA', 44, H - 92);
-  g.fillStyle = '#f7f2e6';
-  g.font = '700 32px "Atkinson Hyperlegible", sans-serif';
-  g.fillText(`${info.name} ${info.km}K · by @yourrunningbro`, 46, H - 44);
-  g.textAlign = 'right';
-  g.fillStyle = '#ffffff';
-  g.font = '800 112px "JetBrains Mono", monospace';
-  g.fillText(fmtTime(run.time), W - 40, H - 74);
-  g.fillStyle = '#bdb5a4';
-  g.font = '700 32px "JetBrains Mono", monospace';
-  g.fillText(`${fmtPace(run.pace)} /km`, W - 44, H - 30);
-  g.fillStyle = 'rgba(22,20,15,.7)';
-  g.fillRect(28, 28, 250, 54);
-  g.fillStyle = '#ffffff';
-  g.textAlign = 'left';
-  g.font = '700 28px "JetBrains Mono", monospace';
-  g.fillText('● FINISH', 44, 66);
+  g.font = '700 46px "Atkinson Hyperlegible", sans-serif';
+  g.fillText(`${info.name} ${info.km}K · ${fmtPace(run.pace)} /km`, 70, H - 60);
   return c;
 }
 

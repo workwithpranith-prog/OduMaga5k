@@ -47,6 +47,7 @@ function loadCourse(id) {
   }
   trophy = TROPHIES[id];
   music.use(id);
+  $('greatRun').textContent = C.cheer || 'GREAT RUN!';
   $('hTotal').textContent = String(C.km);
   $('elevChip').hidden = !ELEV;
   drawElevBg();

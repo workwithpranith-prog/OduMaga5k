@@ -596,12 +596,19 @@ function startArch(u, title, lo = -6.4, hi = 6.4, opts = {}) {
     opts.front || [title, 'START · FINISH'],
     w,
     2.6,
-    '#f2c230',
+    opts.bg || '#f2c230',
     '#1b1915',
     opts.res ? { res: opts.res } : { sizes: [64, 34] }
   );
   faceAt(p, cx, 6.6 + h, cz, f.tx, f.tz);
-  const back = textPlane(opts.back || [title], w, 2.6, '#f2c230', '#1b1915', opts.res ? { res: opts.res } : {});
+  const back = textPlane(
+    opts.back || [title],
+    w,
+    2.6,
+    opts.bg || '#f2c230',
+    '#1b1915',
+    opts.res ? { res: opts.res } : {}
+  );
   back.position.set(cx + f.tx * 0.05, 6.6 + h, cz + f.tz * 0.05);
   back.rotation.y = Math.atan2(f.tx, f.tz);
   ribbon(u - 1 / LOOP, u + 1 / LOOP, -4.1, 4.1, 0.05, matLineW, 1);

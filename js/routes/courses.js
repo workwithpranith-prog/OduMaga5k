@@ -172,6 +172,7 @@ const COURSES = {
     medal: true, // finisher medal on the runner's neck before the treat
     finishPhoto: true, // the photographer at the line takes your photo
     runOut: 28, // metres the runner can coast past the line into the finish area
+    cheer: 'NICE RUN!', // the big end-of-race banner
     hazards: [
       ['racer', 'slower runner', 'slower runners'],
       ['cones', 'cone', 'cones']
