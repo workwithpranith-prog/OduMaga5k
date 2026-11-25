@@ -1164,7 +1164,7 @@ function place(dt){
     TU.cf.position.set(lerp(cx0,x+fr.rx*.62),lerp(1.25,2.45)+arc+gy,lerp(cz0,z+fr.rz*.62));TU.cf.rotation.y=ry;TU.cf.scale.setScalar(sc*(1-.1*hold));
     TU.spin.rotation.y=reduced?0:Math.sin(elapsed*.6)*.5*(1-hold);
     TU.steam.forEach((m,i)=>{const ph=(elapsed*.6+i/3)%1;m.position.set(Math.sin(ph*6+i)*.08,.8+ph*.9,0);m.material.opacity=.6*(1-ph);});}
-  const gr=state==='done'&&tnow>=holdAt&&$('finishScreen').hidden;$('greatRun').hidden=!gr;if(gr){toastEl.classList.remove('show');toastT=0;}
+  const gr=state==='done'&&tnow>=holdAt&&!finishShown;$('greatRun').hidden=!gr;if(gr){toastEl.classList.remove('show');toastT=0;}
   // camera: chase from behind (riding the hills with you); at the finish swing round to face the runner
   let tx,ty,tz,lx,ly,lz;const cy=hS(R.s-7.6*DM),ly0=hS(R.s+9*DM);
   if(state==='done'&&celebT>0){const a=Math.min(1,celebT*.7);const bx=x-fr.tx*7.6,bz=z-fr.tz*7.6,fx=x+fr.tx*8+fr.rx*1.6,fz=z+fr.tz*8+fr.rz*1.6;tx=bx+(fx-bx)*a;tz=bz+(fz-bz)*a;ty=4.1+a*.6+gy;lx=x+fr.tx*2.2*a*(1-hold);lz=z+fr.tz*2.2*a*(1-hold);ly=1.3+a*.4+hold*.9+gy;}
@@ -1246,10 +1246,11 @@ function hiss(t,dur,vol,freq,type,dest){const s=AU.ctx.createBufferSource();s.bu
 const MEL=['E5 G5 C6 G5 E5 G5 A5 G5','D5 G5 B5 G5 D5 G5 B5 D6','C6 B5 A5 E5 A5 B5 C6 E6','D6 C6 A5 F5 A5 C6 D6 C6','E6 - D6 C6 G5 - E5 G5','B5 - A5 G5 D5 - G5 B5','A5 C6 F6 C6 B5 D6 G6 D6','E6 - - C6 G5 - C6 .',
  'A5 - E5 A5 C6 - B5 A5','F5 - C5 F5 A5 - G5 F5','G5 - E5 G5 C6 - D6 E6','D6 - B5 G5 D6 - E6 D6','C6 - A5 C6 E6 - D6 C6','A5 - F5 A5 C6 - D6 C6','B5 D6 B5 G5 B5 D6 G6 F6','D6 - - B5 G5 - . .'];
 const ROOTS=['C','G','A','F','C','G','FG','C','A','F','C','G','A','F','G','G'];
-// Ulsoor Lake: easy morning-by-the-water lilt in G major
-const MEL_U=['B4 D5 G5 D5 B4 D5 G5 A5','F#5 - E5 D5 A4 - D5 F#5','G5 - F#5 E5 B4 - E5 G5','E5 - D5 C5 G4 C5 E5 G5','D6 - B5 G5 D5 G5 B5 D6','C6 - A5 F#5 D5 F#5 A5 C6','B5 A5 G5 E5 C5 E5 G5 A5','F#5 - - D5 A4 - . .',
- 'E5 G5 B5 G5 E5 G5 B5 E6','D6 - C6 B5 G5 - E5 G5','B5 - A5 G5 D5 - G5 B5','A5 - F#5 D5 A5 - B5 C6','E6 D6 C6 G5 E5 G5 C6 E6','D6 C6 A5 F#5 D5 F#5 A5 D6','B5 - G5 D5 G5 - A5 B5','G5 - - D5 G4 - . .'];
-const ROOTS_U=['G','D','E','C','G','D','C','D','E','C','G','D','C','D','G','G'];
+// Ulsoor Lake: bouncy 8-bit lakeside sprint in D major, with a 16th-note arpeggio channel
+const MEL_U=['D5 F#5 A5 D6 A5 F#5 A5 B5','C#6 - A5 E5 C#5 E5 A5 C#6','D6 - B5 F#5 D6 C#6 B5 A5','B5 G5 D5 G5 B5 - A5 G5','F#5 A5 D6 F#6 E6 D6 C#6 D6','E6 - C#6 A5 E6 F#6 E6 C#6','D6 B5 G5 B5 D6 E6 D6 B5','A5 - C#6 - E6 - . .',
+ 'B5 D6 F#6 D6 B5 D6 F#6 B6','A6 - G6 D6 B5 D6 G6 F#6','F#6 E6 D6 A5 F#5 A5 D6 E6','C#6 - E6 C#6 A5 C#6 E6 A6','G6 F#6 E6 D6 B5 D6 E6 F#6','E6 D6 C#6 A5 C#6 E6 A6 G6','F#6 - E6 D6 E6 - C#6 E6','D6 - A5 F#5 D5 - . .'];
+const ROOTS_U=['D','A','B','G','D','A','G','A','B','G','D','A','G','A','GA','D'];
+const CHORDS_U={D:['D5','F#5','A5'],A:['A4','C#5','E5'],B:['B4','D5','F#5'],G:['G4','B4','D5']};
 // NICE Road: driving A-minor highway run
 const MEL_N=['A5 E5 A5 C6 B5 A5 E5 A5','C6 A5 F5 A5 C6 D6 C6 A5','G5 E5 C5 E5 G5 C6 E6 C6','D6 B5 G5 B5 D6 - B5 G5','A5 - C6 E6 D6 C6 B5 A5','F5 - A5 C6 B5 A5 G5 F5','G5 - B5 D6 C6 B5 A5 G5','G#5 - B5 E6 D6 - B5 G#5',
  'E6 - D6 C6 A5 - C6 E6','F6 - E6 C6 A5 - C6 F6','E6 - D6 C6 G5 - C6 E6','D6 - C6 B5 G5 - B5 D6','F5 A5 D6 A5 F5 A5 D6 F6','E6 C6 A5 C6 E6 C6 A5 E5','D6 B5 G5 B5 E6 B5 G#5 B5','A5 - - E5 A4 - . .'];
@@ -1257,18 +1258,26 @@ const ROOTS_N=['A','F','C','G','A','F','G','E','A','F','C','G','D','A','GE','EA'
 function mkTrack(mel,roots,bpm,o){const lead=[],bass=[];
   mel.forEach((bar,bi)=>{bar.split(' ').forEach(tk=>{if(tk==='-'){for(let k=lead.length-1;k>=0;k--)if(lead[k]){lead[k].len++;break;}lead.push(null);}else lead.push(tk==='.'?null:{f:hz(tk),len:1});});
     const r=roots[bi];for(let k=0;k<8;k++){const root=r.length>1?r[k<4?0:1]:r;bass.push(hz(root+(k%2?'3':'2')));}});
-  return{lead,bass,step:60/bpm/2,...o};}
-const TRACKS={cubbon:mkTrack(MEL,ROOTS,148,{kit:'city'}),ulsoor:mkTrack(MEL_U,ROOTS_U,126,{kit:'lake'}),nice:mkTrack(MEL_N,ROOTS_N,164,{kit:'drive'})};
+  const arp=[];if(o.chords)roots.forEach(r=>{for(let k=0;k<8;k++){const c=o.chords[r.length>1?r[k<4?0:1]:r];arp.push([hz(c[(2*k)%3]),hz(c[(2*k+1)%3])]);}});
+  return{lead,bass,arp,step:60/bpm/2,...o};}
+const TRACKS={cubbon:mkTrack(MEL,ROOTS,148,{kit:'city'}),ulsoor:mkTrack(MEL_U,ROOTS_U,156,{kit:'bounce',chords:CHORDS_U}),nice:mkTrack(MEL_N,ROOTS_N,164,{kit:'drive'})};
 let TR=TRACKS.cubbon;
-function playStep(i,t){const T=TR,e=T.lead[i],S=T.step,b=i%8;
-  if(T.kit==='lake'){if(e){tone('square',e.f,t,e.len*S*.9,.11,AU.mus);tone('triangle',e.f/2,t,e.len*S*.9,.14,AU.mus);}tone('triangle',T.bass[i],t,S*.85,.38,AU.mus);
-    if(b===0||b===5)tone('sine',150,t,.12,.42,AU.mus,50);if(b===3||b===7)tone('sine',880,t,.04,.12,AU.mus);hiss(t,.05,.06,6000,'highpass',AU.mus);return;}
-  if(T.kit==='drive'){if(e)tone('sawtooth',e.f,t,e.len*S*.85,.075,AU.mus);tone('square',T.bass[i],t,S*.7,.14,AU.mus);
-    if(b===0||b===3||b===4)tone('sine',170,t,.12,.6,AU.mus,42);if(b===2||b===6)hiss(t,.13,.26,1600,'bandpass',AU.mus);hiss(t,.03,.09,8000,'highpass',AU.mus);if(i%2)hiss(t+S/2,.02,.05,9000,'highpass',AU.mus);return;}
-  if(e)tone('square',e.f,t,e.len*S*.9,.15,AU.mus);tone('triangle',T.bass[i],t,S*.85,.42,AU.mus);
-  if(b===0||b===4)tone('sine',160,t,.12,.55,AU.mus,45);if(b===2||b===6)hiss(t,.11,.22,1800,'bandpass',AU.mus);if(i%2)hiss(t,.035,.07,7000,'highpass',AU.mus);}
-const music={start(){if(!AU.ctx||AU.playing)return;AU.playing=true;AU.step=0;AU.next=AU.ctx.currentTime+.06;const T=TR;AU.timer=setInterval(()=>{while(AU.next<AU.ctx.currentTime+.15){playStep(AU.step,AU.next);AU.next+=T.step;AU.step=(AU.step+1)%T.lead.length;}},25);},
-  stop(){AU.playing=false;clearInterval(AU.timer);},
+function playStep(T,i,t,d){const e=T.lead[i],S=T.step,b=i%8;
+  if(T.kit==='bounce'){if(e)tone('square',e.f,t,e.len*S*.8,.13,d);const a=T.arp[i];tone('square',a[0]*2,t,S*.3,.04,d);tone('square',a[1]*2,t+S/2,S*.3,.032,d);
+    tone('triangle',T.bass[i],t,S*.6,.42,d);if(b===0||b===3||b===4||b===6)tone('sine',165,t,.11,.58,d,45);if(b===2||b===6)hiss(t,.12,.24,2000,'bandpass',d);
+    hiss(t,.03,.07,8000,'highpass',d);hiss(t+S/2,.02,.04,9000,'highpass',d);return;}
+  if(T.kit==='drive'){if(e)tone('sawtooth',e.f,t,e.len*S*.85,.075,d);tone('square',T.bass[i],t,S*.7,.14,d);
+    if(b===0||b===3||b===4)tone('sine',170,t,.12,.6,d,42);if(b===2||b===6)hiss(t,.13,.26,1600,'bandpass',d);hiss(t,.03,.09,8000,'highpass',d);if(i%2)hiss(t+S/2,.02,.05,9000,'highpass',d);return;}
+  if(e)tone('square',e.f,t,e.len*S*.9,.15,d);tone('triangle',T.bass[i],t,S*.85,.42,d);
+  if(b===0||b===4)tone('sine',160,t,.12,.55,d,45);if(b===2||b===6)hiss(t,.11,.22,1800,'bandpass',d);if(i%2)hiss(t,.035,.07,7000,'highpass',d);}
+// one track at a time: every start gets its own bus, and stop fades that bus out so notes already queued can't overlap the next track
+const music={bus:null,
+  start(){if(!AU.ctx||AU.playing)return;AU.playing=true;clearInterval(AU.timer);const bus=AU.ctx.createGain();bus.connect(AU.mus);music.bus=bus;const T=TR;
+    AU.step=0;AU.next=AU.ctx.currentTime+.06;
+    AU.timer=setInterval(()=>{const tn=AU.ctx.currentTime;if(AU.next<tn-.05)AU.next=tn+.05;   // fell behind (busy frame, throttled tab): skip ahead, don't burst
+      while(AU.next<tn+.15){playStep(T,AU.step,AU.next,bus);AU.next+=T.step;AU.step=(AU.step+1)%T.lead.length;}},25);},
+  stop(){AU.playing=false;clearInterval(AU.timer);AU.timer=null;const b=music.bus;music.bus=null;
+    if(b&&AU.ctx){const t=AU.ctx.currentTime;try{b.gain.cancelScheduledValues(t);b.gain.setValueAtTime(1,t);b.gain.linearRampToValueAtTime(0,t+.05);}catch(e){}setTimeout(()=>{try{b.disconnect();}catch(e){}},400);}},
   use(id){const t=TRACKS[id]||TRACKS.cubbon;if(t===TR)return;TR=t;if(AU.playing){this.stop();this.start();}}};
 
 const now=()=>AU.ctx.currentTime;const ok=()=>AU.ctx&&AU.on;
@@ -1334,9 +1343,9 @@ $('routeBack').addEventListener('click',()=>{$('routeScreen').hidden=true;$(rout
 // ---------- flow ----------
 function startRace(){holdAt=1e12;$('greatRun').hidden=true;audioInit();music.stop();music.use(C.id);if(AU.on)music.start();lastBeep=null;newRace();runNo++;quitSent=false;track('start',{km:0});camInit=false;
   for(const id of ['startScreen','finishScreen','routeScreen','boardScreen'])$(id).hidden=true;$('hud').hidden=false;$('paceBox').hidden=false;hud();state='count';countT=3.2;$('countdown').hidden=false;}
-function finishRace(){state='done';track('finish',{km:C.km});const t0=performance.now()/1000;holdAt=t0+3.4;doneT=holdAt+2.6;celebT=0;toast(C.treat.toast,3);$('paceBox').hidden=true;music.stop();sfx.fanfare();}
-let lastRun=null;
-function showFinish(){
+function finishRace(){state='done';finishShown=false;track('finish',{km:C.km});const t0=performance.now()/1000;holdAt=t0+3.4;doneT=holdAt+2.6;celebT=0;toast(C.treat.toast,3);$('paceBox').hidden=true;music.stop();sfx.fanfare();}
+let lastRun=null,finishShown=false;
+function showFinish(){finishShown=true;
   $('hud').hidden=true;
   const t=R.clock,pace=t/C.km;const old=pbOf(C.id);const isPB=old==null||t<old;if(isPB){PBS[C.id]=t;try{localStorage.setItem(C.pbKey,String(t));}catch(e){}}
   const beat=CH&&CH.t&&CH.r===C.id&&t<CH.t;
@@ -1429,7 +1438,7 @@ function loop(){
   if(toastT>0){toastT-=dt;if(toastT<=0)toastEl.classList.remove('show');}
   if(state==='count'){countT-=dt;const n=Math.ceil(countT-.2);if(n!==lastBeep){lastBeep=n;sfx.beep(n<=0);}$('countdown').textContent=n>0?String(n):'GO!';if(countT<=0){state='run';$('countdown').hidden=true;toast('Tap, tap, tap!',1.2);}}
   if(state==='run'||state==='done'||state==='count')update(dt,now);
-  if(state==='done'&&now>=doneT&&$('finishScreen').hidden)showFinish();
+  if(state==='done'&&now>=doneT&&!finishShown)showFinish();
   if(R)place(dt);
   if(!reduced){TEX.water.offset.x=elapsed*.03;TEX.water.offset.y=elapsed*.012;}
   hudT-=dt;if(hudT<=0&&state!=='loading'){hud();hudT=.08;}
