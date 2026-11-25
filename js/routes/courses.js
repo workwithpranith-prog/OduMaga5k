@@ -157,16 +157,21 @@ const COURSES = {
     heat: 1.08,
     eyebrow: 'NICE Road · Peripheral Ring Road · out and back',
     tagline: '5 km out along the open expressway, U-turn, 5 km back. Rolling climbs all the way, no shade.',
-    meta: 'Hilly · 114 m of climbing',
+    meta: 'Hilly · 114 m of climbing · aid every 2 km',
     finishAt: 'NICE Road',
     color: '#b5401f',
     treat: {
-      title: 'Tender coconut + banana',
-      text: 'Your finish-line trophy: an ice-cold tender coconut straight from the roadside stall, and a banana from the finisher kit.',
-      toast: 'Finish! Tender coconut + banana earned',
-      short: 'a tender coconut and a banana'
+      title: 'Banana, coconut water + idli chutney',
+      text: 'A finisher medal round your neck, then the classic Bengaluru race breakfast: a banana, fresh tender coconut water, and soft idlis with coconut chutney.',
+      toast: 'Finisher medal! Banana, coconut water + idli chutney earned',
+      short: 'a finisher medal and idli breakfast'
     },
     pbKey: 'odumaga.pb.nice',
+    // race-day extras on this route only
+    aid: [2000, 4000, 6000, 8000], // aid-station tables on the left: run in the left lane to refuel
+    medal: true, // finisher medal on the runner's neck before the treat
+    finishPhoto: true, // the photographer at the line takes your photo
+    runOut: 28, // metres the runner can coast past the line into the finish area
     hazards: [
       ['racer', 'slower runner', 'slower runners'],
       ['cones', 'cone', 'cones']
@@ -188,7 +193,7 @@ const COURSES = {
       const out = [];
       let s = 300;
       while (s < RACE - 180) {
-        if (Math.abs(s - 5000) < 170 || Math.abs(s - 1700) < 30) {
+        if (Math.abs(s - 5000) < 170 || Math.abs(s - 1700) < 30 || C.aid.some(a => Math.abs(s - a) < 110)) {
           s += 60;
           continue;
         }
@@ -204,6 +209,6 @@ const COURSES = {
       }
       return out;
     },
-    pickups: { water: [950, 1950, 2950, 3900, 4700, 5600, 6550, 7500, 8450, 9300], gel: [1350, 3350, 5350, 7250, 8900] }
+    pickups: { water: [], gel: [] } // no floating power-ups here: the aid stations do the job
   }
 };

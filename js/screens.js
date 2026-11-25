@@ -164,7 +164,8 @@ function finishRace() {
   finishShown = false;
   track('finish', { km: C.km });
   const t0 = performance.now() / 1000;
-  holdAt = t0 + 3.4;
+  holdAt = t0 + 3.4 + treatDelay();
+  if (C.finishPhoto) R.photoPending = true;
   doneT = holdAt + 2.6;
   celebT = 0;
   toast(C.treat.toast, 3);
@@ -199,10 +200,14 @@ function showFinish() {
   const c = R.counts;
   const pl = (n, a, b) => `${n} ${n === 1 ? a : b}`;
   const hits = C.hazards.map(([k, a, b]) => pl(c[k] || 0, a, b)).join(', ');
+  const fuel = C.aid
+    ? `${c.aid} of ${C.aid.length} aid stations`
+    : `${pl(c.water, 'water bottle', 'water bottles')} · ${pl(c.gel, 'gel', 'gels')}`;
   $('fTally').textContent =
-    `${pl(c.water, 'water bottle', 'water bottles')} · ${pl(c.gel, 'gel', 'gels')}${ELEV ? ` · climbed ${Math.round(R.climb)} m` : ''}${c.steps ? ` · ${pl(c.steps, 'flight of steps', 'flights of steps')}` : ''} · stumbles: ${hits}`;
+    `${fuel}${ELEV ? ` · climbed ${Math.round(R.climb)} m` : ''}${c.steps ? ` · ${pl(c.steps, 'flight of steps', 'flights of steps')}` : ''} · stumbles: ${hits}`;
   $('sharePrev').hidden = true;
   lastRun = { route: C.id, time: Math.round(t), pace: Math.round(pace), climb: Math.round(R.climb || 0) };
+  showFinishPhoto(lastRun);
   shareImg = null;
   myId = null;
   myRank = null;

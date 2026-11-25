@@ -33,16 +33,25 @@ function nicePath() {
       z: c.z - T[e].tx * o * Math.cos(th) + t.tz * o * Math.sin(th)
     });
   }
-  const home = [];
+  // behind the start/finish both carriageways carry on as closed, empty road (barricaded in buildNice),
+  // and only join up with a U-turn far out of sight, so the drawn path can still be one loop
+  const home = [],
+    c0 = P[0],
+    t0 = T[0],
+    EXT = 1800,
+    STEP = 40;
+  for (let d = STEP; d <= EXT; d += STEP)
+    home.push({ x: c0.x - t0.tz * o - t0.tx * d, z: c0.z + t0.tx * o - t0.tz * d });
+  const fc = { x: c0.x - t0.tx * EXT, z: c0.z - t0.tz * EXT };
   for (let k = 1; k < 12; k++) {
-    const th = (Math.PI * k) / 12,
-      c = P[0],
-      t = T[0];
+    const th = (Math.PI * k) / 12;
     home.push({
-      x: c.x - T[0].tz * o * Math.cos(th) - t.tx * o * Math.sin(th),
-      z: c.z + T[0].tx * o * Math.cos(th) - t.tz * o * Math.sin(th)
+      x: fc.x - t0.tz * o * Math.cos(th) - t0.tx * o * Math.sin(th),
+      z: fc.z + t0.tx * o * Math.cos(th) - t0.tz * o * Math.sin(th)
     });
   }
+  for (let d = EXT; d >= STEP; d -= STEP)
+    home.push({ x: c0.x + t0.tz * o - t0.tx * d, z: c0.z - t0.tx * o - t0.tz * d });
   const len = A => {
     let s = 0;
     for (let i = 1; i < A.length; i++) s += Math.hypot(A[i].x - A[i - 1].x, A[i].z - A[i - 1].z);
@@ -101,9 +110,13 @@ function buildNice() {
     }
   }
   BASEY = null;
-  // start / finish across both carriageways
-  startArch(0, 'ODU MAGA 10K', -6.8, 2 * o + 6.8);
-  ribbon(FRAC - 1 / LOOP, FRAC + 1 / LOOP, -4.1, 4.1, 0.05, matLineW, 1);
+  // start / finish across both carriageways. The front (seen by the finish-line photographer) carries the credit.
+  startArch(0, 'ODU MAGA 10K', -6.8, 2 * o + 6.8, {
+    front: ['ODU MAGA', 'by @yourrunningbro'],
+    back: ['ODU MAGA 10K', 'FINISH'],
+    res: 1600
+  });
+  buildNiceFinish();
   for (let k = 1; k < 10; k++) {
     if (k === 5) continue;
     roadsideSign(uOf(k * 1000), -7, [`KM ${k}`], 1.8, 1.1, '#1f6b3a', '#ffffff');
@@ -200,15 +213,25 @@ function buildNice() {
     BASEY = null;
     FOOT.push({ x: TURN_C.x, z: TURN_C.z, r: 6 });
   }
-  // water stations: a table, cups and volunteers at each aid point
-  for (const s of C.pickups.water) {
-    const { R } = site(uOf(s), -8.4, 3);
-    R('white', 1, 0.9, 3.4, 0, 0, 0);
-    for (let k = -1; k <= 1; k++) R('blue', 0.2, 0.25, 0.2, 0, 0.9, k * 1.1);
-    R('dark', 0.5, 0.9, 0.3, 0, 0, -1.2);
-    R('orange', 0.6, 0.8, 0.36, 0, 0.9, -1.2);
-    R('bark', 0.42, 0.42, 0.42, 0, 1.7, -1.2);
+  // aid stations: a table on the left-hand shoulder every 2 km (run in the left lane to grab a drink)
+  for (const s of C.aid) {
+    const { R, c, ry } = site(uOf(s), -4.95, 4);
+    R('white', 4.2, 0.9, 1, 0, 0, 0);
+    for (let k = 0; k < 9; k++)
+      R(k % 3 ? 'blue' : 'orange', 0.22, 0.28, 0.22, -1.8 + k * 0.45, 0.9, 0.2 - (k % 2) * 0.3);
+    R('gold', 0.7, 0.4, 0.5, 1.6, 0.9, -0.2);
+    for (const lx of [-1.4, 0, 1.4]) {
+      R('dark', 0.5, 0.9, 0.3, lx, 0, -0.9);
+      R('orange', 0.6, 0.8, 0.36, lx, 0.9, -0.9);
+      R('bark', 0.42, 0.42, 0.42, lx, 1.7, -0.9);
+      R('orange', 0.16, 0.16, 0.6, lx + 0.3, 1.35, -0.45);
+      R('blue', 0.2, 0.26, 0.2, lx + 0.3, 1.4, -0.1);
+    }
+    R('dark', 0.12, 3.3, 0.12, -2.2, 0, -1.4);
+    R('dark', 0.12, 3.3, 0.12, 2.2, 0, -1.4);
+    plaque(c, ry, -1.38, 2.8, ['AID STATION', `KM ${s / 1000}`], 4.6, 1, '#1f6b3a', '#ffffff', { sizes: [44, 30] });
     BASEY = null;
+    roadsideSign(uOf(s - 70), -7, ['AID STATION', 'Keep left'], 2.4, 1.1, '#1f6b3a', '#ffffff');
   }
   // supporters at the start and the turnaround
   for (const s of [60, 140, 4880, 5120, 9850, 9930]) {
@@ -269,4 +292,88 @@ function buildNice() {
       box('leafD', w * 0.6, 8, w * 0.4, p.x, 10, p.z, srnd());
     }
   }
+}
+
+// ---------- NICE finish area ----------
+// Red carpet over the last stretch, a finish zone with people standing about, a photographer on a riser
+// on the median, and barricades closing the road behind it.
+let PHOTOG = null; // where the photographer's camera is, and the arch centre it frames (read by photo.js)
+function buildNiceFinish() {
+  const o = NOFF,
+    f = {},
+    uF = FRAC;
+  // red carpet with gold edges over the last 12.5 world units (about 10 m at the runner's scale), then the line on top
+  const carpet = new THREE.MeshLambertMaterial({ color: '#b3122a', side: DS });
+  const gold = new THREE.MeshLambertMaterial({ color: '#e3b23c', side: DS });
+  ribbon(uF - 12.5 / LOOP, uF + 2 / LOOP, -3.9, 3.9, 0.07, carpet, 2);
+  for (const s of [-1, 1]) ribbon(uF - 12.5 / LOOP, uF + 2 / LOOP, s * 3.9, s * 4.15, 0.075, gold, 1);
+  ribbon(uF - 0.5 / LOOP, uF + 0.5 / LOOP, -4.1, 4.1, 0.085, matLineW, 1);
+  ribbon(-0.5 / LOOP, 0.5 / LOOP, -4.1, 4.1, 0.05, matLineW, 1);
+  // positions past the finish line, measured along the finishing carriageway (lat 2*o is the outbound carriageway)
+  const at = (metresPast, lat) => {
+    frame(uOf(RACE + metresPast), f);
+    return { x: f.x + f.rx * lat, z: f.z + f.rz * lat, ry: Math.atan2(-f.tx, -f.tz), h: hU(uOf(RACE + metresPast)) };
+  };
+  const tees = ['red', 'blue', 'saffron', 'green', 'white', 'orange', 'cream'];
+  let k = 0;
+  // finishers, volunteers and family standing in the open space after the line (kept off the photographer's view)
+  for (let m = 8; m < 42; m += 3.2)
+    for (const lat of [-6.4, -7.4, 2 * o + 4.9, 2 * o + 5.9]) {
+      if ((k++ * 7) % 5 === 0) continue;
+      const p = at(m, lat + (k % 3) * 0.3);
+      BASEY = p.h;
+      person(p.x, p.z, p.ry + (k % 4) * 0.6, tees[k % tees.length]);
+    }
+  for (const [m, lat] of [
+    [26, 2 * o - 1.5],
+    [30, 2 * o + 1.2],
+    [34, 2 * o - 0.4],
+    [38, 2 * o + 2.2]
+  ]) {
+    const p = at(m, lat);
+    BASEY = p.h;
+    person(p.x, p.z, p.ry + k++ * 0.9, tees[k % tees.length]);
+  }
+  // the photographer on a riser 16 units past the line, by the finishing lanes, facing the runners
+  {
+    const p = at(64, o * 0.45);
+    BASEY = p.h;
+    box('dark', 1.6, 1.4, 1.6, p.x, 0, p.z);
+    box('concrete', 1.8, 0.12, 1.8, p.x, 1.4, p.z);
+    box('dark', 0.5, 0.9, 0.3, p.x, 1.52, p.z, p.ry);
+    box('blue', 0.6, 0.8, 0.36, p.x, 2.42, p.z, p.ry);
+    box('bark', 0.42, 0.42, 0.42, p.x, 3.22, p.z, p.ry);
+    const fwd = { x: Math.sin(p.ry), z: Math.cos(p.ry) }; // towards the finish line
+    box('dark', 0.36, 0.3, 0.3, p.x + fwd.x * 0.35, 3.24, p.z + fwd.z * 0.35, p.ry);
+    box('white', 0.22, 0.16, 0.12, p.x + fwd.x * 0.35, 3.5, p.z + fwd.z * 0.35, p.ry);
+    const arch = frame(0, {});
+    PHOTOG = {
+      x: p.x + fwd.x * 0.6,
+      y: p.h + 3.4,
+      z: p.z + fwd.z * 0.6,
+      ax: arch.x + arch.rx * o,
+      az: arch.z + arch.rz * o
+    };
+    FOOT.push({ x: p.x, z: p.z, r: 3 });
+  }
+  // barricades across both carriageways: the road carries on behind them, empty
+  {
+    const p = at(80, 0);
+    BASEY = p.h;
+    frame(uOf(RACE + 80), f);
+    const ry = Math.atan2(f.tx, f.tz);
+    for (let lat = -6.2, i = 0; lat <= 2 * o + 6.2; lat += 1.3, i++) {
+      const x = f.x + f.rx * lat,
+        z = f.z + f.rz * lat;
+      box(i % 2 ? 'white' : 'red', 1.25, 0.5, 0.08, x, 0.45, z, ry);
+      box(i % 2 ? 'red' : 'white', 1.25, 0.2, 0.08, x, 0.2, z, ry);
+      box('dark', 0.08, 1, 0.5, x - f.rx * 0.6, 0, z - f.rz * 0.6, ry);
+    }
+    const c = { x: f.x + f.rx * o, z: f.z + f.rz * o };
+    const sign = textPlane(['ROAD CLOSED', 'Race in progress'], 4, 1.2, '#b5401f', '#ffffff', { both: true });
+    sign.position.set(c.x, p.h + 1.6, c.z);
+    sign.rotation.y = ry;
+    box('dark', 0.12, 1.6, 0.12, c.x, 0, c.z);
+  }
+  BASEY = null;
 }

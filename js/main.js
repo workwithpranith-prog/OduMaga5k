@@ -50,6 +50,7 @@ function loop() {
   if (state === 'run' || state === 'done' || state === 'count') update(dt, now);
   if (state === 'done' && now >= doneT && !finishShown) showFinish();
   if (R) place(dt);
+  tickFlash(dt);
   if (!reduced) {
     TEX.water.offset.x = elapsed * 0.03;
     TEX.water.offset.y = elapsed * 0.012;

@@ -511,7 +511,7 @@ function laneDashes(ranges) {
 
 // ---------- signs (canvas text) ----------
 function textPlane(lines, w, h, bg, fg, opts = {}) {
-  const W = 512,
+  const W = opts.res || 512, // canvas width in px; wide signs need more so their text isn't squashed
     H = Math.round((W * h) / w);
   const c = document.createElement('canvas');
   c.width = W;
@@ -577,7 +577,9 @@ function roadsideSign(u, side, lines, w, h, bg, fg, y = 2.4) {
   faceAt(p, x - f.tx * 0.15, y + h / 2 - 0.2 + b, z - f.tz * 0.15, f.tx, f.tz);
 }
 // start/finish arch over the road at loop position u (span: lateral extent of the posts)
-function startArch(u, title, lo = -6.4, hi = 6.4) {
+// opts.front / opts.back: text on each face (front faces back along the route, towards the start side);
+// opts.res: canvas width for a wide arch, so the text stays crisp
+function startArch(u, title, lo = -6.4, hi = 6.4, opts = {}) {
   const f = frame(u, {}),
     h = hU(u);
   BASEY = h;
@@ -590,9 +592,16 @@ function startArch(u, title, lo = -6.4, hi = 6.4) {
     w = hi - lo + 0.6,
     cx = f.x + f.rx * mid,
     cz = f.z + f.rz * mid;
-  const p = textPlane([title, 'START · FINISH'], w, 2.6, '#f2c230', '#1b1915', { sizes: [64, 34] });
+  const p = textPlane(
+    opts.front || [title, 'START · FINISH'],
+    w,
+    2.6,
+    '#f2c230',
+    '#1b1915',
+    opts.res ? { res: opts.res } : { sizes: [64, 34] }
+  );
   faceAt(p, cx, 6.6 + h, cz, f.tx, f.tz);
-  const back = textPlane([title], w, 2.6, '#f2c230', '#1b1915');
+  const back = textPlane(opts.back || [title], w, 2.6, '#f2c230', '#1b1915', opts.res ? { res: opts.res } : {});
   back.position.set(cx + f.tx * 0.05, 6.6 + h, cz + f.tz * 0.05);
   back.rotation.y = Math.atan2(f.tx, f.tz);
   ribbon(u - 1 / LOOP, u + 1 / LOOP, -4.1, 4.1, 0.05, matLineW, 1);

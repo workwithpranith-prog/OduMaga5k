@@ -269,6 +269,12 @@ const sfx = {
     tone('triangle', hz('G6'), now(), 0.14, 0.32);
     tone('triangle', hz('C7'), now() + 0.1, 0.28, 0.28);
   },
+  shutter() {
+    if (!ok()) return;
+    hiss(now(), 0.05, 0.5, 3000, 'highpass');
+    tone('square', 1800, now() + 0.06, 0.03, 0.12);
+    hiss(now() + 0.07, 0.04, 0.35, 2500, 'highpass');
+  },
   beep(hi) {
     if (!ok()) return;
     tone('square', hi ? 880 : 440, now(), hi ? 0.35 : 0.14, 0.22);

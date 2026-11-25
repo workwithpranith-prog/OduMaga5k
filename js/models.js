@@ -53,7 +53,17 @@ function makeRunner() {
   sh.position.y = 0.04;
   g.add(sh);
   scene.add(g);
-  return { g, body, legs, arms };
+  // finisher medal: ribbon round the neck and a gold disc on the chest (front of the runner is +z)
+  const medal = pivot(body, 0, 0, 0);
+  for (const sx of [-1, 1]) {
+    const strap = part(medal, 0.08, 0.46, 0.03, '#2f6fb3', sx * 0.12, 1.5, 0.19);
+    strap.rotation.z = sx * 0.42;
+  }
+  const disc = cyl(medal, 0.15, 0.15, 0.05, '#e3b23c', 0, 1.25, 0.21, 16);
+  disc.rotation.x = Math.PI / 2;
+  part(medal, 0.12, 0.12, 0.02, '#c9902a', 0, 1.25, 0.245);
+  medal.visible = false;
+  return { g, body, legs, arms, medal };
 }
 function makeAuto() {
   const g = new THREE.Group();
@@ -419,30 +429,41 @@ function makeTrophyChai() {
   g.userData.steam = steam;
   return g;
 }
-function makeTrophyCoconut() {
+// NICE Road: the race breakfast. Plate: three idlis, coconut and tomato chutney, a banana. In the other hand: tender coconut water.
+function makeTrophyNice() {
   const g = trophyBase(),
     { spin, cf } = g.userData;
-  const leaf = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.03, 1.7), new THREE.MeshLambertMaterial({ map: TEX.leaf }));
-  leaf.position.y = 0.04;
-  leaf.rotation.y = -0.35;
-  spin.add(leaf);
-  cyl(spin, 0.62, 0.82, 1.2, '#5c9a2e', 0, 0.68, 0, 10);
-  cyl(spin, 0.3, 0.62, 0.42, '#7fb33e', 0, 1.49, 0, 10);
-  cyl(spin, 0.3, 0.3, 0.04, '#e9eecf', 0, 1.71, 0, 10);
-  const straw = cyl(spin, 0.05, 0.05, 1.1, '#ff3fa4', 0.1, 2.1, 0, 8);
-  straw.rotation.z = -0.35;
-  for (let k = 0; k < 3; k++) {
-    const b = pivot(cf, 0, 0, (k - 1) * 0.22);
-    for (let j = 0; j < 4; j++) {
-      const m = part(b, 0.34, 0.2, 0.2, '#f2d23a', -0.45 + j * 0.3, 0.12 + Math.abs(j - 1.5) * 0.08, 0);
-      m.rotation.z = (j - 1.5) * 0.25;
-    }
-    part(b, 0.1, 0.1, 0.12, '#5e3e25', -0.66, 0.28, 0);
+  cyl(spin, 1.38, 1.3, 0.09, '#c3c7cb', 0, 0.1, 0, 24); // steel plate
+  for (const [x, z] of [
+    [-0.45, 0.25],
+    [0.2, 0.45],
+    [-0.05, -0.15]
+  ]) {
+    cyl(spin, 0.42, 0.4, 0.22, '#f4f1e6', x, 0.25, z, 16); // idli
+    cyl(spin, 0.36, 0.36, 0.02, '#e8e2cf', x, 0.37, z, 16);
   }
+  cyl(spin, 0.32, 0.25, 0.2, '#c3c7cb', 0.75, 0.24, -0.35, 14);
+  cyl(spin, 0.28, 0.28, 0.03, '#eef0dc', 0.75, 0.34, -0.35, 14); // coconut chutney
+  part(spin, 0.08, 0.04, 0.06, '#2f6f26', 0.7, 0.37, -0.3);
+  cyl(spin, 0.28, 0.22, 0.18, '#c3c7cb', 0.65, 0.23, 0.45, 14);
+  cyl(spin, 0.24, 0.24, 0.03, '#cf3f26', 0.65, 0.32, 0.45, 14); // tomato chutney
+  const ban = pivot(spin, -0.55, 0.22, -0.75);
+  ban.rotation.y = 0.4;
+  for (let j = 0; j < 5; j++) {
+    const m = part(ban, 0.3, 0.18, 0.2, '#f2d23a', -0.6 + j * 0.28, Math.abs(j - 2) * 0.06, 0);
+    m.rotation.z = (j - 2) * 0.22;
+  }
+  part(ban, 0.1, 0.1, 0.12, '#5e3e25', -0.82, 0.16, 0);
+  // tender coconut with a straw
+  cyl(cf, 0.36, 0.48, 0.7, '#5c9a2e', 0, 0.35, 0, 10);
+  cyl(cf, 0.18, 0.36, 0.25, '#7fb33e', 0, 0.82, 0, 10);
+  cyl(cf, 0.18, 0.18, 0.03, '#e9eecf', 0, 0.95, 0, 10);
+  const straw = cyl(cf, 0.035, 0.035, 0.7, '#ff3fa4', 0.06, 1.2, 0, 8);
+  straw.rotation.z = -0.3;
   return g;
 }
 
 const runner = makeRunner();
 const train = makeTrain();
-const TROPHIES = { cubbon: makeTrophy(), ulsoor: makeTrophyChai(), nice: makeTrophyCoconut() };
+const TROPHIES = { cubbon: makeTrophy(), ulsoor: makeTrophyChai(), nice: makeTrophyNice() };
 let trophy = TROPHIES.cubbon;
