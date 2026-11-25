@@ -22,10 +22,39 @@ On a laptop: space bar to run, arrow keys to change lanes.
 
 ## How it's built
 
-- One file: `index.html`. No build step.
+- No build step: `index.html` loads `css/style.css` and the scripts in `js/`, in order. Open `index.html` in a browser to play.
 - 3D: [three.js](https://threejs.org/) r128, loaded from cdnjs.
 - Music and sound effects: an original chiptune for each route, generated live with the Web Audio API.
 - Leaderboard: a [Supabase](https://supabase.com/) table (`scores`: name, time, pace, route, posted at). Anyone can read and add scores; nobody can edit or delete them through the site. Per-route boards use the `route` column added by `supabase/add_route_column.sql`.
 - Hosting: [GitHub Pages](https://pages.github.com/), deployed from the `main` branch of this repo. Every merge to `main` goes live in about a minute.
+
+### Where things live
+
+| Path | What's in it |
+|---|---|
+| `index.html` | The screens (start, route picker, HUD, finish, leaderboard) and the list of scripts, in load order |
+| `css/style.css` | All styling |
+| `js/core.js` | Shared constants and small helpers |
+| `js/leaderboard.js` | Supabase leaderboards and anonymous run stats |
+| `js/data/strava-routes.js` | GPS tracks and elevation from the Strava runs |
+| `js/engine/` | Three.js scene and textures (`scene.js`), the route path, elevation, ground and roads (`world.js`), landmark and scenery helpers (`scenery.js`) |
+| `js/routes/` | One file per route (`cubbon.js`, `ulsoor.js`, `nice.js`) and `courses.js`, which describes every route: distance, treat, hazards, pickups |
+| `js/models.js` | The runner, traffic, hazards and finish-line treats |
+| `js/race.js` | Race state, input, physics and the camera |
+| `js/hud.js`, `js/screens.js`, `js/share.js` | The heads-up display and mini-map, the screens and flow, sharing |
+| `js/audio.js`, `js/treats.js` | Music and sound effects; the 2D treat drawings |
+| `js/main.js` | The game loop and start-up |
+
+The scripts are plain (not modules) and share one global scope, so the order in `index.html` matters.
+
+### Checks
+
+Install once with `npm install`, then:
+
+- `npm run format`: tidy the formatting (Prettier)
+- `npm run lint`: catch typos and names that are defined nowhere, across all the scripts
+- `npm test`: play every route in a headless browser, plus a full Ulsoor run that checks the finish screen, the share text and the music (`npx playwright install chromium` the first time)
+
+GitHub runs all three on every pull request (`.github/workflows/check.yml`).
 
 Made by [@yourrunningbro](https://www.instagram.com/yourrunningbro/).
