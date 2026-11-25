@@ -123,7 +123,14 @@ input{flex:1 1 180px;min-width:0;font:700 17px var(--body);padding:10px;backgrou
 .rch{font-size:13px;font-weight:700;color:var(--ink);background:var(--gel);padding:3px 8px;align-self:flex-start}
 .challenge{background:var(--gel);color:var(--ink);padding:10px 12px;border:2px solid #0d0c09;display:flex;flex-direction:column;gap:2px;font-weight:700}
 .challenge b{font-family:var(--display);font-weight:400;font-size:14px}
-.sharebtns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.sharebtns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.sbtn.main{background:var(--run);color:#fff}
+.sharePrev{background:#fff8dc;border:2px solid #0d0c09;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.sharePrev p{margin:0;color:var(--ink);font:400 14px/1.4 var(--body);white-space:pre-wrap;overflow-wrap:anywhere;-webkit-user-select:text;user-select:text}
+.sharePrev .spk{font:700 12px var(--body);color:#2f8f5b}
+.sharePrev .copybtn{align-self:flex-start;margin-left:0}
+.follow{color:var(--ink);font:700 15px var(--body);text-decoration:underline;text-underline-offset:3px}
+.follow:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .sbtn{appearance:none;border:2px solid #0d0c09;background:var(--ink);color:var(--auto);font:400 14px var(--display);padding:9px 8px;cursor:pointer;box-shadow:3px 3px 0 rgba(0,0,0,.35)}
 .sbtn:active{transform:translate(1px,1px);box-shadow:2px 2px 0 rgba(0,0,0,.35)}
 .sbtn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
@@ -207,8 +214,10 @@ input{flex:1 1 180px;min-width:0;font:700 17px var(--body);padding:10px;backgrou
     <div class="status" id="saveStatus" role="status"></div>
     <div class="share">
       <span>Share your run and dare your friends to beat it</span>
-      <div class="sharebtns"><button class="sbtn" id="shareBtn" type="button">Share</button><button class="sbtn" id="waBtn" type="button">WhatsApp</button><button class="sbtn" id="copyLink" type="button">Copy link</button><button class="sbtn" id="saveImg" type="button">Save image</button></div>
+      <div class="sharebtns"><button class="sbtn main" id="shareBtn" type="button">Share</button><button class="sbtn" id="waBtn" type="button">WhatsApp</button><button class="sbtn" id="saveImg" type="button">Save image</button></div>
+      <div class="sharePrev" id="sharePrev" hidden><span class="spk" id="shareCopied">Copied. Paste it in any app.</span><p id="shareText"></p><button class="copybtn" id="copyAgain" type="button">Copy again</button></div>
       <div class="hrow"><span>Posting on Instagram? Tag</span><b id="handle">@yourrunningbro</b><button class="copybtn" id="copyHandle" type="button">Copy</button></div>
+      <a class="follow" href="https://www.instagram.com/yourrunningbro" target="_blank" rel="noopener">Follow @yourrunningbro on Instagram →</a>
     </div>
     <div id="fullWrap">
       <h3 id="fullTitle">Leaderboard</h3>
@@ -1262,7 +1271,7 @@ function hiss(t,dur,vol,freq,type,dest){const s=AU.ctx.createBufferSource();s.bu
 const MEL=['E5 G5 C6 G5 E5 G5 A5 G5','D5 G5 B5 G5 D5 G5 B5 D6','C6 B5 A5 E5 A5 B5 C6 E6','D6 C6 A5 F5 A5 C6 D6 C6','E6 - D6 C6 G5 - E5 G5','B5 - A5 G5 D5 - G5 B5','A5 C6 F6 C6 B5 D6 G6 D6','E6 - - C6 G5 - C6 .',
  'A5 - E5 A5 C6 - B5 A5','F5 - C5 F5 A5 - G5 F5','G5 - E5 G5 C6 - D6 E6','D6 - B5 G5 D6 - E6 D6','C6 - A5 C6 E6 - D6 C6','A5 - F5 A5 C6 - D6 C6','B5 D6 B5 G5 B5 D6 G6 F6','D6 - - B5 G5 - . .'];
 const ROOTS=['C','G','A','F','C','G','FG','C','A','F','C','G','A','F','G','G'];
-// Ulsoor Lake: bouncy 8-bit lakeside sprint in D major, with a 16th-note arpeggio channel
+// Ulsoor Lake: happy, sunny 8-bit lakeside tune in D major, with a sparkly 16th-note arpeggio channel
 const MEL_U=['D5 F#5 A5 D6 A5 F#5 A5 B5','C#6 - A5 E5 C#5 E5 A5 C#6','D6 - B5 F#5 D6 C#6 B5 A5','B5 G5 D5 G5 B5 - A5 G5','F#5 A5 D6 F#6 E6 D6 C#6 D6','E6 - C#6 A5 E6 F#6 E6 C#6','D6 B5 G5 B5 D6 E6 D6 B5','A5 - C#6 - E6 - . .',
  'B5 D6 F#6 D6 B5 D6 F#6 B6','A6 - G6 D6 B5 D6 G6 F#6','F#6 E6 D6 A5 F#5 A5 D6 E6','C#6 - E6 C#6 A5 C#6 E6 A6','G6 F#6 E6 D6 B5 D6 E6 F#6','E6 D6 C#6 A5 C#6 E6 A6 G6','F#6 - E6 D6 E6 - C#6 E6','D6 - A5 F#5 D5 - . .'];
 const ROOTS_U=['D','A','B','G','D','A','G','A','B','G','D','A','G','A','GA','D'];
@@ -1276,12 +1285,12 @@ function mkTrack(mel,roots,bpm,o){const lead=[],bass=[];
     const r=roots[bi];for(let k=0;k<8;k++){const root=r.length>1?r[k<4?0:1]:r;bass.push(hz(root+(k%2?'3':'2')));}});
   const arp=[];if(o.chords)roots.forEach(r=>{for(let k=0;k<8;k++){const c=o.chords[r.length>1?r[k<4?0:1]:r];arp.push([hz(c[(2*k)%3]),hz(c[(2*k+1)%3])]);}});
   return{lead,bass,arp,step:60/bpm/2,...o};}
-const TRACKS={cubbon:mkTrack(MEL,ROOTS,148,{kit:'city'}),ulsoor:mkTrack(MEL_U,ROOTS_U,156,{kit:'bounce',chords:CHORDS_U}),nice:mkTrack(MEL_N,ROOTS_N,164,{kit:'drive'})};
+const TRACKS={cubbon:mkTrack(MEL,ROOTS,148,{kit:'city'}),ulsoor:mkTrack(MEL_U,ROOTS_U,133,{kit:'bounce',chords:CHORDS_U}),nice:mkTrack(MEL_N,ROOTS_N,164,{kit:'drive'})};
 let TR=TRACKS.cubbon;
 function playStep(T,i,t,d){const e=T.lead[i],S=T.step,b=i%8;
   if(T.kit==='bounce'){if(e)tone('square',e.f,t,e.len*S*.8,.13,d);const a=T.arp[i];tone('square',a[0]*2,t,S*.3,.04,d);tone('square',a[1]*2,t+S/2,S*.3,.032,d);
-    tone('triangle',T.bass[i],t,S*.6,.42,d);if(b===0||b===3||b===4||b===6)tone('sine',165,t,.11,.58,d,45);if(b===2||b===6)hiss(t,.12,.24,2000,'bandpass',d);
-    hiss(t,.03,.07,8000,'highpass',d);hiss(t+S/2,.02,.04,9000,'highpass',d);return;}
+    tone('triangle',T.bass[i],t,S*.6,.4,d);if(b===0||b===4)tone('sine',165,t,.11,.5,d,45);if(b===2||b===6)hiss(t,.1,.18,2200,'bandpass',d);
+    if(i%2)hiss(t,.03,.06,8000,'highpass',d);if(b===3||b===7)tone('sine',1320,t,.05,.07,d);return;}
   if(T.kit==='drive'){if(e)tone('sawtooth',e.f,t,e.len*S*.85,.075,d);tone('square',T.bass[i],t,S*.7,.14,d);
     if(b===0||b===3||b===4)tone('sine',170,t,.12,.6,d,42);if(b===2||b===6)hiss(t,.13,.26,1600,'bandpass',d);hiss(t,.03,.09,8000,'highpass',d);if(i%2)hiss(t+S/2,.02,.05,9000,'highpass',d);return;}
   if(e)tone('square',e.f,t,e.len*S*.9,.15,d);tone('triangle',T.bass[i],t,S*.85,.42,d);
@@ -1371,7 +1380,7 @@ function showFinish(){finishShown=true;
   const c=R.counts;const pl=(n,a,b)=>`${n} ${n===1?a:b}`;
   const hits=C.hazards.map(([k,a,b])=>pl(c[k]||0,a,b)).join(', ');
   $('fTally').textContent=`${pl(c.water,'water bottle','water bottles')} · ${pl(c.gel,'gel','gels')}${ELEV?` · climbed ${Math.round(R.climb)} m`:''}${c.steps?` · ${pl(c.steps,'flight of steps','flights of steps')}`:''} · stumbles: ${hits}`;
-  lastRun={route:C.id,time:Math.round(t),pace:Math.round(pace),climb:Math.round(R.climb||0)};shareImg=null;
+  $('sharePrev').hidden=true;lastRun={route:C.id,time:Math.round(t),pace:Math.round(pace),climb:Math.round(R.climb||0)};shareImg=null;
   myId=null;myRank=null;myRoute=C.id;boardRoute=C.id;
   const can=canSave(C.id);$('nameForm').hidden=!can;$('saveNote').hidden=!can;
   $('saveStatus').textContent=mode&&!dbWritable?'Leaderboard entries are open to runners Pranith has invited.':(mode&&!can?'Leaderboards for this route open soon. Share your time instead!':'');if(mode==='supa')refreshLB(C.id);
@@ -1399,8 +1408,9 @@ $('nameForm').addEventListener('submit',async e=>{e.preventDefault();if(!mode||s
 function shareInfo(){const L=lastRun,c=COURSES[L.route];let name='';try{name=(lastSubmitted&&myRoute===L.route&&lastSubmitted.name)||localStorage.getItem('nammarun.name')||'';}catch(e){}
   const q=new URLSearchParams({r:L.route,t:String(L.time)});if(name)q.set('n',name);
   const url=location.origin+location.pathname+'?'+q.toString();
-  const text=`I just ran the Odu Maga ${c.name} ${c.km}K in ${fmtTime(L.time)} (${fmtPace(L.pace)}/km) and earned ${c.treat.short}. Think you can beat me?`;
-  return{url,text,c,name};}
+  const text=`I just ran the Odu Maga ${c.name} ${c.km}K in ${fmtTime(L.time)} (${fmtPace(L.pace)}/km). Think you can beat me?`;
+  const full=`${text}\n${url}\n\nFollow @yourrunningbro on Instagram: https://www.instagram.com/yourrunningbro`;
+  return{url,text,full,c,name};}
 let shareImg=null;
 function routeSketch(g,x,y,w,h){let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;const n=Math.floor(N*FRAC);for(let i=0;i<n;i+=4){x0=Math.min(x0,PX[i]);x1=Math.max(x1,PX[i]);z0=Math.min(z0,PZ[i]);z1=Math.max(z1,PZ[i]);}
   const sc=Math.min(w/(x1-x0||1),h/(z1-z0||1)),ox=x+(w-(x1-x0)*sc)/2,oy=y+(h-(z1-z0)*sc)/2;
@@ -1427,13 +1437,12 @@ async function getShareFile(){if(!shareImg){const b=await makeShareImage();if(b)
 function flashBtn(id,msg){const b=$(id),old=b.dataset.label||(b.dataset.label=b.textContent);b.textContent=msg;b.classList.add('done');setTimeout(()=>{b.textContent=old;b.classList.remove('done');},1800);}
 function copyText(txt,btn){const ok=()=>flashBtn(btn,'Copied!');const fb=()=>{try{const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.append(ta);ta.select();const r=document.execCommand&&document.execCommand('copy');ta.remove();if(r){ok();return;}}catch(e){}flashBtn(btn,'Long-press to copy');};
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(ok,fb);else fb();}
-$('shareBtn').addEventListener('click',async()=>{if(!lastRun)return;const {url,text}=shareInfo();
-  if(navigator.share){let file=null;try{file=await getShareFile();}catch(e){}
-    try{if(file&&navigator.canShare&&navigator.canShare({files:[file]}))await navigator.share({files:[file],text:text+' '+url});else await navigator.share({title:'Odu Maga',text,url});return;}
-    catch(e){if(e&&e.name==='AbortError')return;}}
-  window.open('https://wa.me/?text='+encodeURIComponent(text+' '+url),'_blank','noopener');});
-$('waBtn').addEventListener('click',()=>{if(!lastRun)return;const {url,text}=shareInfo();window.open('https://wa.me/?text='+encodeURIComponent(text+' '+url),'_blank','noopener');});
-$('copyLink').addEventListener('click',()=>{if(!lastRun)return;const {url,text}=shareInfo();copyText(text+' '+url,'copyLink');});
+$('shareBtn').addEventListener('click',()=>{if(!lastRun)return;const {full}=shareInfo();$('shareText').textContent=full;$('sharePrev').hidden=false;$('shareCopied').textContent='Copied. Paste it in any app.';
+  const fail=()=>{$('shareCopied').textContent='Press and hold the message to copy it.';};
+  const fb=()=>{try{const ta=document.createElement('textarea');ta.value=full;ta.style.position='fixed';ta.style.opacity='0';document.body.append(ta);ta.select();const r=document.execCommand&&document.execCommand('copy');ta.remove();if(!r)fail();}catch(e){fail();}};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(full).catch(fb);else fb();flashBtn('shareBtn','Copied!');});
+$('copyAgain').addEventListener('click',()=>{if(lastRun)copyText(shareInfo().full,'copyAgain');});
+$('waBtn').addEventListener('click',()=>{if(!lastRun)return;window.open('https://wa.me/?text='+encodeURIComponent(shareInfo().full),'_blank','noopener');});
 $('saveImg').addEventListener('click',async()=>{if(!lastRun)return;try{const f=await getShareFile();const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);flashBtn('saveImg','Saved!');}catch(e){flashBtn('saveImg','Try again');}});
 $('copyHandle').addEventListener('click',()=>copyText('@yourrunningbro','copyHandle'));
 
