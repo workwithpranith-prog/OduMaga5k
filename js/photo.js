@@ -18,7 +18,7 @@ function takeFinishPhoto() {
   if (!PHOTOG) return;
   if (!photoRT) {
     photoRT = new THREE.WebGLRenderTarget(PHOTO_W, PHOTO_H);
-    photoCam = new THREE.PerspectiveCamera(15, PHOTO_W / PHOTO_H, 0.1, 500); // a long lens: close-up from the riser
+    photoCam = new THREE.PerspectiveCamera(15, PHOTO_W / PHOTO_H, 4, 400); // a long lens from the riser; near plane well out so close layers (bib on tee) don't flicker
   }
   const f = frame(uOf(R.s), {}),
     gy = hS(R.s),
@@ -100,7 +100,7 @@ function photoCard(run) {
   g.textAlign = 'left';
   g.fillStyle = '#ffffff';
   g.font = '700 40px "JetBrains Mono", monospace';
-  g.fillText('● FINISH', 70, H - 330);
+  g.fillText(run.bib ? `● FINISH · BIB ${run.bib}` : '● FINISH', 70, H - 330);
   g.font = '800 230px "JetBrains Mono", monospace';
   g.fillText(fmtTime(run.time), 56, H - 130);
   g.fillStyle = '#f2c230';

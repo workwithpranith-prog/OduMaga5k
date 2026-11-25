@@ -60,7 +60,7 @@ function makeRunner() {
   const bib = pivot(body, 0, 0, 0);
   for (const sz of [1, -1]) {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.34), bibMat);
-    m.position.set(0, 1.36, sz * 0.185);
+    m.position.set(0, 1.36, sz * 0.195);
     if (sz < 0) m.rotation.y = Math.PI;
     bib.add(m);
   }
@@ -75,7 +75,12 @@ function makeRunner() {
   disc.rotation.x = Math.PI / 2;
   part(medal, 0.12, 0.12, 0.02, '#c9902a', 0, 1.25, 0.245);
   medal.visible = false;
-  return { g, body, legs, arms, medal, bib, bibTex };
+  // the tee gets its own material so its colour can change per run without touching anything else red
+  const teeMat = new THREE.MeshLambertMaterial({ color: TEE });
+  body.traverse(m => {
+    if (m.material === mk(TEE)) m.material = teeMat;
+  });
+  return { g, body, legs, arms, medal, bib, bibTex, teeMat };
 }
 function makeAuto() {
   const g = new THREE.Group();
@@ -488,6 +493,36 @@ function paintBib(event, number) {
   g.fillText(number, 115, 140);
   runner.bibTex.image = c;
   runner.bibTex.needsUpdate = true;
+}
+// race kit (routes with randomKit: true): a new tee colour and bib number every run, so every finish photo differs
+const KIT_TEES = [
+  '#ef3b2d',
+  '#2f6fb3',
+  '#2bb3a8',
+  '#7b4bd0',
+  '#e8457a',
+  '#1f8a4c',
+  '#f2c230',
+  '#16140f',
+  '#ef7a2d',
+  '#5c6bc0'
+];
+let kit = { tee: TEE, bib: '1001' };
+function newKit() {
+  let tee;
+  do tee = KIT_TEES[(Math.random() * KIT_TEES.length) | 0];
+  while (tee === kit.tee);
+  kit = { tee, bib: String(1001 + Math.floor(Math.random() * 8999)) };
+  applyKit();
+}
+function defaultKit() {
+  kit = { tee: TEE, bib: C.bib ? C.bib.number : '1001' };
+  applyKit();
+}
+function applyKit() {
+  runner.teeMat.color.set(kit.tee);
+  runner.bib.visible = !!C.bib;
+  if (C.bib) paintBib(C.bib.event, kit.bib);
 }
 const train = makeTrain();
 const TROPHIES = { cubbon: makeTrophy(), ulsoor: makeTrophyChai(), nice: makeTrophyNice() };

@@ -174,6 +174,7 @@ const COURSES = {
     runOut: 28, // metres the runner can coast past the line into the finish area
     cheer: 'NICE RUN!', // the big end-of-race banner
     bib: { event: 'ODU MAGA 10K', number: '1001' }, // race bib on the runner's tee
+    randomKit: true, // new tee colour and random bib number every run
     hazards: [['racer', 'runner', 'runners']],
     path: nicePath,
     elev() {

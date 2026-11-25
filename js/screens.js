@@ -46,8 +46,8 @@ function loadCourse(id) {
     t.visible = t.userData.plateG.visible = t.userData.cf.visible = false;
   }
   trophy = TROPHIES[id];
-  runner.bib.visible = !!C.bib;
-  if (C.bib) paintBib(C.bib.event, C.bib.number);
+  if (C.randomKit) newKit();
+  else defaultKit();
   music.use(id);
   $('greatRun').textContent = C.cheer || 'GREAT RUN!';
   $('hTotal').textContent = String(C.km);
@@ -142,6 +142,7 @@ $('routeBack').addEventListener('click', () => {
 
 // ---------- flow ----------
 function startRace() {
+  if (C.randomKit) newKit(); // fresh tee colour and bib number for every run
   holdAt = 1e12;
   $('greatRun').hidden = true;
   audioInit();
@@ -209,7 +210,13 @@ function showFinish() {
   $('fTally').textContent =
     `${fuel}${ELEV ? ` · climbed ${Math.round(R.climb)} m` : ''}${c.steps ? ` · ${pl(c.steps, 'flight of steps', 'flights of steps')}` : ''} · stumbles: ${hits}`;
   $('sharePrev').hidden = true;
-  lastRun = { route: C.id, time: Math.round(t), pace: Math.round(pace), climb: Math.round(R.climb || 0) };
+  lastRun = {
+    route: C.id,
+    time: Math.round(t),
+    pace: Math.round(pace),
+    climb: Math.round(R.climb || 0),
+    bib: C.bib ? kit.bib : null
+  };
   showFinishPhoto(lastRun);
   shareImg = null;
   myId = null;
