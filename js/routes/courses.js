@@ -21,6 +21,7 @@ const COURSES = {
       short: 'a masala dosa and filter coffee'
     },
     pbKey: 'nammarun5k.pb',
+    randomKit: true, // new tee colour every run (no bib: not a race)
     hazards: [
       ['auto', 'auto', 'autos'],
       ['cow', 'cow', 'cows'],
@@ -76,6 +77,7 @@ const COURSES = {
       short: 'honey cake and masala chai'
     },
     pbKey: 'odumaga.pb.ulsoor',
+    randomKit: true, // new tee colour every run (no bib: not a race)
     hazards: [
       ['cart', 'food cart', 'food carts'],
       ['walkers', 'walker', 'walkers'],
