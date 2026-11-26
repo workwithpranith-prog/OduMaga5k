@@ -118,7 +118,11 @@ function photoCard(run, photo) {
   g.textAlign = 'left';
   g.fillStyle = '#ffffff';
   g.font = '700 40px "JetBrains Mono", monospace';
-  g.fillText(`● ${photo.label}${run.bib ? ` · BIB ${run.bib}` : ''}`, 70, H - 330);
+  g.fillText(
+    `● ${photo.label}${run.name ? ` · ${run.name.toUpperCase()}` : ''}${run.bib ? ` · BIB ${run.bib}` : ''}`,
+    70,
+    H - 330
+  );
   g.font = '800 230px "JetBrains Mono", monospace';
   g.fillText(fmtTime(photo.finish ? run.time : photo.clock), 56, H - 130);
   g.fillStyle = '#f2c230';

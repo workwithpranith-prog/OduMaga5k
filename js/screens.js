@@ -1,4 +1,45 @@
 'use strict';
+// ---------- runner name: asked once on the intro screen, kept on this phone ----------
+const cleanName = v =>
+  String(v || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 20);
+function getName() {
+  try {
+    return cleanName(localStorage.getItem('nammarun.name'));
+  } catch (e) {
+    return '';
+  }
+}
+function setName(v) {
+  const n = cleanName(v);
+  try {
+    if (n) localStorage.setItem('nammarun.name', n);
+  } catch (e) {}
+  paintRunner();
+  if (C && C.bib) applyKit(); // the bib shows the new name
+  return n;
+}
+function paintRunner() {
+  const n = getName();
+  $('runnerBox').hidden = !!n;
+  $('runnerSet').hidden = !n;
+  $('runnerShow').textContent = n;
+}
+$('runnerSave').addEventListener('click', () => setName($('runnerName').value));
+$('runnerName').addEventListener('keydown', e => {
+  if (e.key === 'Enter') setName($('runnerName').value);
+});
+$('runnerChange').addEventListener('click', () => {
+  $('runnerName').value = getName();
+  $('runnerBox').hidden = false;
+  $('runnerSet').hidden = true;
+  $('runnerName').focus();
+  $('runnerName').select();
+});
+paintRunner();
+
 // ---------- loading a route ----------
 const PBS = {};
 function pbOf(id) {
@@ -66,14 +107,15 @@ function* courseSteps(id) {
 }
 // build a route behind the lacing screen; resolves once the screen has faded out
 const paintFrame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
-async function loadCourse(id) {
-  loaderShow(`Lacing up for ${(COURSES[id] || COURSES.cubbon).name}`);
+// quiet: build without the loading screen (the first route, behind the intro screen)
+async function loadCourse(id, quiet = false) {
+  if (!quiet) loaderShow(`Lacing up for ${(COURSES[id] || COURSES.cubbon).name}`);
   await paintFrame();
   for (const t of courseSteps(id)) {
-    loaderProgress(t);
+    if (!quiet) loaderProgress(t);
     await paintFrame();
   }
-  await loaderDone();
+  if (!quiet) await loaderDone();
 }
 // ---------- challenge links: ?r=route&t=seconds&n=name ----------
 const QS = new URLSearchParams(location.search);
@@ -221,35 +263,37 @@ function showFinish() {
     time: Math.round(t),
     pace: Math.round(pace),
     climb: Math.round(R.climb || 0),
-    bib: C.bib ? kit.bib : null
+    bib: C.bib ? kit.bib : null,
+    name: getName()
   };
   showFinishPhotos(lastRun);
   myId = null;
   myRank = null;
   myRoute = C.id;
   boardRoute = C.id;
-  const can = canSave(C.id);
-  $('nameForm').hidden = !can;
+  // the name from the start screen is used straight away; only a runner who skipped it gets the name form
+  const can = canSave(C.id),
+    known = getName();
+  $('nameForm').hidden = !(can && !known);
   $('saveStatus').textContent =
     mode && !can ? 'Leaderboards for this route open soon. Screenshot your finish and tag me instead!' : '';
   if (mode === 'supa') refreshLB(C.id);
   $('submitBtn').disabled = false;
-  try {
-    const n = localStorage.getItem('nammarun.name');
-    if (n) $('nameInput').value = n;
-  } catch (e) {}
+  $('nameInput').value = known;
   drawTreat2D($('dosaCanvas'), C.id);
   renderBoards();
   $('finishScreen').hidden = false;
   if (AU.on) music.start();
+  if (can && known) postTime(known, true); // posted with the name from the start screen
 }
 let submitting = false,
   savedRun = -1;
-$('nameForm').addEventListener('submit', async e => {
-  e.preventDefault();
+// posting a time: the one-tap button and the name form both come here
+// auto: posted on its own with the start-screen name, so failures retry by themselves (there's no button to tap)
+async function postTime(raw, auto = false, attempt = 1) {
   if (!mode || submitting || savedRun === runNo) return;
   submitting = true;
-  const name = $('nameInput').value.replace(/\s+/g, ' ').trim().slice(0, 20);
+  const name = cleanName(raw);
   if (!name) {
     submitting = false;
     $('saveStatus').textContent = 'Add a name first.';
@@ -268,10 +312,8 @@ $('nameForm').addEventListener('submit', async e => {
     myRank = rank;
     myRoute = route;
     lastSubmitted = { id, name, time, pace };
-    try {
-      localStorage.setItem('nammarun.name', name);
-    } catch (_) {}
-    $('saveStatus').textContent = rank ? `Saved. You're #${rank} on the ${C.name} board.` : 'Saved.';
+    setName(name);
+    $('saveStatus').textContent = rank ? `Saved as ${name} · #${rank} on the ${C.name} board.` : `Saved as ${name}.`;
     $('nameForm').hidden = true;
     renderBoards();
   };
@@ -283,10 +325,21 @@ $('nameForm').addEventListener('submit', async e => {
     } catch (err) {
       submitting = false;
       $('submitBtn').disabled = false;
-      $('saveStatus').textContent =
-        err && err.status === 400
+      const run = runNo;
+      if (auto && attempt < 4 && !(err && err.status === 400)) {
+        $('saveStatus').textContent = 'Could not save just now. Trying again…';
+        setTimeout(() => runNo === run && postTime(name, true, attempt + 1), 3000 * attempt);
+        return;
+      }
+      $('saveStatus').textContent = auto
+        ? "Couldn't save your time. Check your connection."
+        : err && err.status === 400
           ? "That time couldn't be saved. Check the name and try again."
           : 'Could not save just now. Check your connection and tap Submit again.';
     }
   }
+}
+$('nameForm').addEventListener('submit', e => {
+  e.preventDefault();
+  postTime($('nameInput').value);
 });

@@ -18,7 +18,10 @@ $('boardRun').addEventListener('click', () => {
   $('boardScreen').hidden = true;
   pickRoute(boardRoute);
 });
-$('startBtn').addEventListener('click', () => openRoutes('startScreen'));
+$('startBtn').addEventListener('click', () => {
+  if (cleanName($('runnerName').value) && !$('runnerBox').hidden) setName($('runnerName').value);
+  openRoutes('startScreen');
+});
 $('againBtn').addEventListener('click', startRace);
 $('changeRoute').addEventListener('click', () => openRoutes('finishScreen'));
 
@@ -65,7 +68,7 @@ function loop() {
 // ---------- start-up: wait for the pixel fonts (signs are drawn with them), then build the first route ----------
 async function startGame() {
   requestAnimationFrame(loop);
-  await loadCourse(CH ? CH.r : 'cubbon');
+  await loadCourse(CH ? CH.r : 'cubbon', true); // the intro screen is already showing; Pick a route waits for this
   state = 'idle';
   $('startBtn').disabled = false;
   $('startBtn').textContent = CH && CH.t ? 'Take the challenge' : 'Pick a route';

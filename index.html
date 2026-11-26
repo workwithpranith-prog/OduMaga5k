@@ -88,6 +88,21 @@
             >
           </div>
         </div>
+        <div class="runner" id="runnerBox">
+          <label for="runnerName">Your runner name (for the leaderboard)</label>
+          <div class="rrow">
+            <input id="runnerName" maxlength="20" placeholder="e.g. Pranith" autocomplete="nickname" /><button
+              class="copybtn"
+              id="runnerSave"
+              type="button"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+        <div class="runnerSet" id="runnerSet" hidden>
+          Running as <b id="runnerShow"></b> · <button class="textbtn" id="runnerChange" type="button">change</button>
+        </div>
         <button class="btn" id="startBtn" disabled>Loading Bengaluru…</button>
         <button class="linkbtn" id="openBoard1" hidden>See the full leaderboards</button>
         <div id="topWrap">
@@ -113,7 +128,7 @@
     </div>
 
     <!-- loading screen: hands lacing a shoe (js/loader.js). Shown from the first paint. -->
-    <div class="loader" id="loader" role="status" aria-live="polite">
+    <div class="loader" id="loader" role="status" aria-live="polite" hidden>
       <canvas id="loaderCanvas" width="180" height="220" aria-hidden="true"></canvas>
       <div class="ldTitle" id="loaderTitle">Lacing up…</div>
       <div class="ldPct" id="loaderPct">0%</div>
