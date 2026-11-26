@@ -88,6 +88,21 @@
             >
           </div>
         </div>
+        <div class="runner" id="runnerBox">
+          <label for="runnerName">Your runner name (for the leaderboard)</label>
+          <div class="rrow">
+            <input id="runnerName" maxlength="20" placeholder="e.g. Pranith" autocomplete="nickname" /><button
+              class="copybtn"
+              id="runnerSave"
+              type="button"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+        <div class="runnerSet" id="runnerSet" hidden>
+          Running as <b id="runnerShow"></b> · <button class="textbtn" id="runnerChange" type="button">change</button>
+        </div>
         <button class="btn" id="startBtn" disabled>Loading Bengaluru…</button>
         <button class="linkbtn" id="openBoard1" hidden>See the full leaderboards</button>
         <div id="topWrap">
@@ -144,6 +159,10 @@
           <a class="follow" href="https://www.instagram.com/yourrunningbro" target="_blank" rel="noopener"
             >Follow @yourrunningbro on Instagram →</a
           >
+        </div>
+        <div class="postWrap" id="postWrap" hidden>
+          <button class="btn" id="postBtn" type="button">Post my time</button>
+          <button class="textbtn" id="postChange" type="button">Not you? Change name</button>
         </div>
         <form id="nameForm" autocomplete="off">
           <label for="nameInput">Your name for the leaderboard</label>

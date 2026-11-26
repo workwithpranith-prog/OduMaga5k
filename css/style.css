@@ -1024,3 +1024,57 @@ input {
 .vbtns {
   grid-template-columns: 1fr;
 }
+
+/* runner name: asked once on the intro screen, then a one-tap post at the finish */
+.runner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.runner label {
+  font-size: 13px;
+  color: var(--muted);
+}
+.rrow {
+  display: flex;
+  gap: 8px;
+}
+.rrow input {
+  flex: 1 1 auto;
+}
+.rrow .copybtn {
+  margin-left: 0;
+}
+.runnerSet {
+  font-size: 15px;
+  color: #e8e1d2;
+}
+.runnerSet b {
+  color: var(--auto);
+  font-family: var(--display);
+  font-weight: 400;
+}
+.textbtn {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 2px 0;
+  color: var(--auto);
+  font: 700 14px var(--body);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.textbtn:focus-visible {
+  outline: 3px solid var(--paper);
+  outline-offset: 2px;
+}
+.postWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.postWrap .btn {
+  width: 100%;
+}

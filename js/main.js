@@ -18,7 +18,10 @@ $('boardRun').addEventListener('click', () => {
   $('boardScreen').hidden = true;
   pickRoute(boardRoute);
 });
-$('startBtn').addEventListener('click', () => openRoutes('startScreen'));
+$('startBtn').addEventListener('click', () => {
+  if (cleanName($('runnerName').value) && !$('runnerBox').hidden) setName($('runnerName').value);
+  openRoutes('startScreen');
+});
 $('againBtn').addEventListener('click', startRace);
 $('changeRoute').addEventListener('click', () => openRoutes('finishScreen'));
 

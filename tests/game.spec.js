@@ -109,3 +109,19 @@ test('ulsoor: full run, finish screen, copy handle, leaderboard table, one music
   expect(await players()).toBeLessThanOrEqual(1);
   expect(errors).toEqual([]);
 });
+
+test('runner name: asked once on the intro screen, remembered after a reload', async ({ page }) => {
+  const errors = await openGame(page);
+  await expect(page.locator('#runnerBox')).toBeVisible();
+  await page.fill('#runnerName', '  Pranith   K ');
+  await page.click('#runnerSave');
+  await expect(page.locator('#runnerSet')).toBeVisible();
+  await expect(page.locator('#runnerShow')).toHaveText('Pranith K');
+  await expect(page.locator('#runnerBox')).toBeHidden();
+  await page.reload();
+  await expect(page.locator('#startBtn')).toBeEnabled({ timeout: 60_000 });
+  await expect(page.locator('#runnerShow')).toHaveText('Pranith K');
+  await page.click('#runnerChange');
+  await expect(page.locator('#runnerName')).toHaveValue('Pranith K');
+  expect(errors).toEqual([]);
+});

@@ -71,7 +71,7 @@ function makeRunner() {
   const bibMat = new THREE.MeshLambertMaterial({ map: bibTex });
   const bib = pivot(body, 0, 0, 0);
   const bibFront = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.34), bibMat); // front only, like a real race
-  bibFront.position.set(0, 1.36, 0.195);
+  bibFront.position.set(0, 1.42, 0.195); // high on the chest, so the medal hangs below the name
   bib.add(bibFront);
   bib.visible = false;
   // finisher medal: ribbon round the neck and a gold disc on the chest (front of the runner is +z)
@@ -79,13 +79,13 @@ function makeRunner() {
   // each strap starts at one side of the neck (top, outer end) and runs down and in to the disc;
   // a short piece over each shoulder carries the ribbon round the back of the neck
   for (const sx of [-1, 1]) {
-    const strap = part(medal, 0.08, 0.46, 0.03, '#2f6fb3', sx * 0.1, 1.53, 0.215);
+    const strap = part(medal, 0.08, 0.53, 0.03, '#2f6fb3', sx * 0.1, 1.5, 0.215);
     strap.rotation.z = -sx * 0.42;
     part(medal, 0.08, 0.03, 0.3, '#2f6fb3', sx * 0.19, 1.705, 0.06);
   }
-  const disc = cyl(medal, 0.15, 0.15, 0.05, '#e3b23c', 0, 1.25, 0.235, 16);
+  const disc = cyl(medal, 0.15, 0.15, 0.05, '#e3b23c', 0, 1.1, 0.235, 16);
   disc.rotation.x = Math.PI / 2;
-  part(medal, 0.12, 0.12, 0.02, '#c9902a', 0, 1.25, 0.27);
+  part(medal, 0.12, 0.12, 0.02, '#c9902a', 0, 1.1, 0.27);
   medal.visible = false;
   // the tee gets its own material so its colour can change per run without touching anything else red
   const teeMat = new THREE.MeshLambertMaterial({ color: TEE });
@@ -535,7 +535,9 @@ function makeAidFx() {
 
 const runner = makeRunner();
 // draw the player's race bib: orange strip with the event, big number
-function paintBib(event, number) {
+// draw the player's race bib: orange strip with the event, then the runner's name big with the number under it
+// (no name saved yet: just a big number)
+function paintBib(event, number, name) {
   const c = document.createElement('canvas');
   c.width = 230;
   c.height = 170;
@@ -548,8 +550,20 @@ function paintBib(event, number) {
   g.textAlign = 'center';
   g.font = '400 28px Bungee, "Arial Black", sans-serif';
   g.fillText(event, 115, 32);
-  g.font = '800 92px "JetBrains Mono", monospace';
-  g.fillText(number, 115, 140);
+  const label = (name || '').toUpperCase();
+  if (label) {
+    let size = 64; // shrink long names until they fit the bib
+    do {
+      g.font = `400 ${size}px Bungee, "Arial Black", sans-serif`;
+      size -= 2;
+    } while (g.measureText(label).width > 214 && size > 18);
+    g.fillText(label, 115, 112);
+    g.font = '800 34px "JetBrains Mono", monospace';
+    g.fillText(number, 115, 156);
+  } else {
+    g.font = '800 92px "JetBrains Mono", monospace';
+    g.fillText(number, 115, 140);
+  }
   runner.bibTex.image = c;
   runner.bibTex.needsUpdate = true;
 }
@@ -581,7 +595,7 @@ function defaultKit() {
 function applyKit() {
   runner.teeMat.color.set(kit.tee);
   runner.bib.visible = !!C.bib;
-  if (C.bib) paintBib(C.bib.event, kit.bib);
+  if (C.bib) paintBib(C.bib.event, kit.bib, getName());
 }
 const train = makeTrain();
 const TROPHIES = { cubbon: makeTrophy(), ulsoor: makeTrophyChai(), nice: makeTrophyNice() };
