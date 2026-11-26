@@ -953,22 +953,6 @@ input {
 .hud .row:first-child {
   margin-left: 86px;
 }
-/* home: how to play folds away */
-details.how summary {
-  cursor: pointer;
-  font: 400 14px var(--display);
-  color: var(--auto);
-  list-style: none;
-}
-details.how summary::before {
-  content: '▸ ';
-}
-details.how[open] summary::before {
-  content: '▾ ';
-}
-details.how[open] {
-  gap: 8px;
-}
 /* finish: photo grid, one-line treat, share row */
 .photos {
   display: grid;

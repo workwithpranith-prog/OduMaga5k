@@ -53,6 +53,7 @@ function paintTabs() {
 }
 function renderBoards() {
   const on = !!mode;
+  $('topWrap').hidden = !on;
   $('openBoard1').hidden = $('openBoard2').hidden = !on;
   if (!on) return;
   paintTabs();
@@ -61,7 +62,10 @@ function renderBoards() {
     info = ROUTE_INFO[boardRoute],
     mine = myRoute === boardRoute;
   $('dTitle').textContent = `${info.name} · ${info.km}K`;
-  for (const [id, max] of [['dTop', 20]]) {
+  for (const [id, max] of [
+    ['topBoard', 5],
+    ['dTop', 20]
+  ]) {
     const el = $(id);
     el.replaceChildren();
     if (L.closed) {

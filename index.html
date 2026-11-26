@@ -64,23 +64,41 @@
           <div class="eyebrow">Cubbon Park · Ulsoor Lake · NICE Road</div>
           <h1>
             Odu Maga<span class="badge">RUN</span
-            ><small>Blocky runs around Bengaluru. Beat the clock, earn the local treat.</small>
+            ><small
+              >Blocky runs around Bengaluru. Pick a route, beat the clock, and earn the local treat at the
+              finish.</small
+            >
           </h1>
         </div>
         <div class="challenge" id="challenge" hidden><b>Challenge</b><span id="chText"></span></div>
-        <button class="btn" id="startBtn" disabled>Loading Bengaluru…</button>
-        <button class="btn alt" id="openBoard1" hidden>Leaderboards</button>
-        <details class="how">
-          <summary>How to play</summary>
+        <div class="how">
           <div><b>TAP</b><span>Tap fast to run fast. Slow taps, slow pace. Keyboard: space bar.</span></div>
           <div>
             <b>SWIPE</b
-            ><span>Swipe left or right to switch lanes and dodge whatever's in the way. Keyboard: arrow keys.</span>
+            ><span
+              >Swipe left or right to switch lanes. Dodge autos, cows, dogs, food carts, walkers and slower runners.
+              Keyboard: arrow keys.</span
+            >
           </div>
           <div>
-            <b>FUEL</b><span>Energy drops the faster you run, and faster still uphill. Water and gels refill it.</span>
+            <b>FUEL</b
+            ><span
+              >Energy drops the longer and faster you run, and faster still uphill. Water bottles refill it. Carb gels
+              refill it and give a short boost.</span
+            >
           </div>
-        </details>
+        </div>
+        <div id="topWrap">
+          <h3>Top runners</h3>
+          <div class="tabs" role="group" aria-label="Route">
+            <button type="button" data-route="cubbon">Cubbon 5K</button
+            ><button type="button" data-route="ulsoor">Ulsoor 3K</button
+            ><button type="button" data-route="nice">NICE 10K</button>
+          </div>
+          <div class="board" id="topBoard"><div class="empty">Loading times…</div></div>
+        </div>
+        <button class="btn" id="startBtn" disabled>Loading Bengaluru…</button>
+        <button class="linkbtn" id="openBoard1" hidden>See the full leaderboards</button>
       </div>
     </div>
 
