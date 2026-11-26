@@ -62,7 +62,7 @@ for (const id of ROUTES) {
     expect(await km(page)).toBeGreaterThan(0.02);
     await expect(page.locator('#hTotal')).toHaveText({ cubbon: '5', ulsoor: '3', nice: '10' }[id]);
     await expect(page.locator('#elevChip')).toBeVisible({ visible: id !== 'cubbon' });
-    await expect(page.locator('#miniMap')).toBeVisible({ visible: id === 'ulsoor' });
+    await expect(page.locator('#miniMap')).toBeVisible({ visible: id !== 'cubbon' });
     await info.attach(`${id}.png`, { body: await page.screenshot(), contentType: 'image/png' });
     expect(errors).toEqual([]);
   });

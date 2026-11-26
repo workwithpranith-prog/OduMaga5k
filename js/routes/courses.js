@@ -177,6 +177,7 @@ const COURSES = {
     cheer: 'NICE RUN!', // the big end-of-race banner
     bib: { event: 'ODU MAGA 10K', number: '1001' }, // race bib on the runner's tee
     randomKit: true, // new tee colour and random bib number every run
+    minimap: true, // 'You are here' map of the out-and-back
     hazards: [['racer', 'runner', 'runners']],
     path: nicePath,
     elev() {
@@ -200,9 +201,9 @@ const COURSES = {
           continue;
         }
         // a race field: everyone holds their own pace, about 5:00 to 9:20 per km (pace = 15000 / speed),
-        // sometimes in twos and threes across the road. Quicker ones pull away; slower ones you weave past.
+        // sometimes in twos. Quicker ones pull away; slower ones you weave past.
         const lanes = [-1, 0, 1].sort(() => r() - 0.5),
-          group = r() < 0.3 ? (r() < 0.4 ? 3 : 2) : 1,
+          group = r() < 0.25 ? 2 : 1, // never three abreast, so there's always a gap to overtake through
           pace = 300 + r() * 260;
         for (let k = 0; k < group; k++)
           out.push({
@@ -212,7 +213,7 @@ const COURSES = {
             speed: 15000 / (pace + (r() - 0.5) * 30),
             ph: r() * 6
           });
-        s += 110 + r() * 110;
+        s += 140 + r() * 132; // about 30% fewer runners than before
       }
       return out;
     },

@@ -64,13 +64,13 @@ function loop() {
   requestAnimationFrame(loop);
 }
 // ---------- start-up: wait for the pixel fonts (signs are drawn with them), then build the first route ----------
-function startGame() {
-  loadCourse(CH ? CH.r : 'cubbon');
+async function startGame() {
+  requestAnimationFrame(loop);
+  await loadCourse(CH ? CH.r : 'cubbon');
   state = 'idle';
   $('startBtn').disabled = false;
   $('startBtn').textContent = CH && CH.t ? 'Take the challenge' : 'Pick a route';
   $('startBtn').classList.add('flash');
-  requestAnimationFrame(loop);
 }
 (async () => {
   try {
@@ -84,6 +84,7 @@ function startGame() {
     ]);
   } catch (e) {}
   if (!window.THREE) {
+    loaderHide();
     const b = document.getElementById('startBtn');
     b.textContent = '3D engine failed to load. Reload the page.';
     return;

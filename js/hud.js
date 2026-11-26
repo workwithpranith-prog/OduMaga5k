@@ -59,7 +59,9 @@ function drawMiniBg() {
     x1 = -1e9,
     z0 = 1e9,
     z1 = -1e9;
-  for (let i = 0; i < N; i += 4) {
+  // only the part of the loop the race uses (NICE draws a closed-off road behind the start that isn't run)
+  const iEnd = FRAC < 1 ? Math.floor(N * FRAC) : N;
+  for (let i = 0; i < iEnd; i += 4) {
     x0 = Math.min(x0, PX[i]);
     x1 = Math.max(x1, PX[i]);
     z0 = Math.min(z0, PZ[i]);
@@ -85,11 +87,22 @@ function drawMiniBg() {
     g.strokeStyle = col;
     g.lineWidth = lw;
     g.beginPath();
-    for (let i = 0; i <= N; i += 4) {
-      const k = i % N;
+    for (let i = 0; i <= iEnd; i += 4) {
+      const k = Math.min(i, iEnd) % N;
       i ? g.lineTo(X(PX[k]), Y(PZ[k])) : g.moveTo(X(PX[k]), Y(PZ[k]));
     }
-    g.closePath();
+    if (FRAC >= 1) g.closePath();
+    g.stroke();
+  }
+  if (C.id === 'nice') {
+    // the 5 km U-turn
+    const t = frame(NICE_TURN, {});
+    g.fillStyle = '#f0742a';
+    g.strokeStyle = '#16140f';
+    g.lineWidth = 3;
+    g.beginPath();
+    g.arc(X(t.x), Y(t.z), 7, 0, 6.283);
+    g.fill();
     g.stroke();
   }
   const f = frame(uOf(0), {}),

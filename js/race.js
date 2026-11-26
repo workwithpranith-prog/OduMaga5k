@@ -47,6 +47,8 @@ function buildCourse(seed) {
             : 0;
     objs.push(o);
   }
+  if (C.aid)
+    C.aid.forEach((s, i) => objs.push({ type: 'aidfx', s, lane: 0, lat: -4.8, aid: i, g: makeAidFx(), decor: true }));
   pick('water', C.pickups.water);
   pick('gel', C.pickups.gel);
   for (const o of objs) {
@@ -261,7 +263,7 @@ function update(dt, now) {
     o.g.visible = true;
     const ou = uOf(o.s);
     frame(ou, fo);
-    let lat = o.lane * LANE,
+    let lat = o.lat != null ? o.lat : o.lane * LANE,
       y = hU(ou),
       ry = Math.atan2(fo.tx, fo.tz) + (o.face || 0);
     if (o.done) {
@@ -304,6 +306,14 @@ function update(dt, now) {
       });
     o.g.position.set(fo.x + fo.rx * lat, y, fo.z + fo.rz * lat);
     o.g.rotation.y = ry;
+    if (o.type === 'aidfx') {
+      const A = o.g.userData;
+      A.spin.rotation.y += dt * 2.2;
+      A.prize.position.y = 2 + (reduced ? 0 : Math.sin(elapsed * 3) * 0.2);
+      A.prize.visible = R.aidDone[o.aid] !== 1; // gone once you've grabbed it
+      A.sign.scale.setScalar(reduced ? 1 : 1 + 0.07 * Math.sin(elapsed * 2.4));
+      continue;
+    }
     if (o.type === 'steps') {
       const w = ds / DM;
       const b = bumpAt(w);
