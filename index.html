@@ -136,10 +136,14 @@
         <div class="treatline">
           <canvas id="dosaCanvas" width="112" height="112"></canvas><span>Earned: <b id="tTitle"></b></span>
         </div>
-        <div class="sharebtns">
-          <button class="sbtn main" id="shareBtn" type="button">Share</button
-          ><button class="sbtn ig" id="igBtn" type="button">Instagram story</button
-          ><button class="sbtn" id="saveImg" type="button">Save image</button>
+        <div class="share">
+          <span>Screenshot this and tag me in your story</span>
+          <div class="hrow">
+            <b id="handle">@yourrunningbro</b><button class="copybtn" id="copyHandle" type="button">Copy</button>
+          </div>
+          <a class="follow" href="https://www.instagram.com/yourrunningbro" target="_blank" rel="noopener"
+            >Follow @yourrunningbro on Instagram →</a
+          >
         </div>
         <form id="nameForm" autocomplete="off">
           <label for="nameInput">Your name for the leaderboard</label>
@@ -147,16 +151,16 @@
           <button class="btn" id="submitBtn" type="submit">Submit</button>
         </form>
         <div class="status" id="saveStatus" role="status"></div>
+        <div id="fullWrap">
+          <h3 id="fullTitle">Leaderboard</h3>
+          <div class="boardWrap">
+            <div class="board" id="fullBoard"><div class="empty">Loading times…</div></div>
+          </div>
+        </div>
         <div class="tally" id="fTally"></div>
         <div class="btns">
           <button class="btn" id="againBtn">Run again</button
           ><button class="btn alt" id="changeRoute">Change route</button>
-        </div>
-        <div class="finishlinks">
-          <button class="linkbtn" id="openBoard2" hidden>Leaderboard</button>
-          <a class="follow" href="https://www.instagram.com/yourrunningbro" target="_blank" rel="noopener"
-            >Follow @yourrunningbro →</a
-          >
         </div>
       </div>
     </div>
@@ -198,8 +202,7 @@
       </div>
       <div class="vstrip" id="vStrip"></div>
       <div class="vbtns">
-        <button class="sbtn ig" id="vIg" type="button">Instagram story</button
-        ><button class="sbtn" id="vSave" type="button">Save image</button>
+        <button class="btn" id="vSave" type="button">Download</button>
       </div>
     </div>
 

@@ -773,40 +773,6 @@ input {
   font-weight: 400;
   font-size: 14px;
 }
-.sharebtns {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-}
-.sbtn.main {
-  background: var(--run);
-  color: #fff;
-}
-.sharePrev {
-  background: #fff8dc;
-  border: 2px solid #0d0c09;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.sharePrev p {
-  margin: 0;
-  color: var(--ink);
-  font: 400 14px/1.4 var(--body);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  -webkit-user-select: text;
-  user-select: text;
-}
-.sharePrev .spk {
-  font: 700 12px var(--body);
-  color: #2f8f5b;
-}
-.sharePrev .copybtn {
-  align-self: flex-start;
-  margin-left: 0;
-}
 .follow {
   color: var(--ink);
   font: 700 15px var(--body);
@@ -816,28 +782,6 @@ input {
 .follow:focus-visible {
   outline: 3px solid var(--ink);
   outline-offset: 2px;
-}
-.sbtn {
-  appearance: none;
-  border: 2px solid #0d0c09;
-  background: var(--ink);
-  color: var(--auto);
-  font: 400 14px var(--display);
-  padding: 9px 8px;
-  cursor: pointer;
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);
-}
-.sbtn:active {
-  transform: translate(1px, 1px);
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
-}
-.sbtn:focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 2px;
-}
-.sbtn.done {
-  background: #2f8f5b;
-  color: #fff;
 }
 .btn.alt {
   background: var(--paper);
@@ -953,7 +897,7 @@ input {
 .hud .row:first-child {
   margin-left: 86px;
 }
-/* finish: photo grid, one-line treat, share row */
+/* finish: photo grid, one-line treat */
 .photos {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1005,24 +949,6 @@ input {
 }
 .treatline b {
   color: var(--auto);
-}
-.sharebtns {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-.sbtn.ig {
-  background: linear-gradient(45deg, #f2a33a, #e8457a 55%, #7b4bd0);
-  color: #fff;
-}
-.finishlinks {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.finishlinks .follow {
-  color: var(--auto);
-  font-size: 14px;
 }
 .tally {
   font-size: 12px;
@@ -1093,4 +1019,8 @@ input {
 .photos span {
   bottom: auto;
   top: 4px;
+}
+
+.vbtns {
+  grid-template-columns: 1fr;
 }

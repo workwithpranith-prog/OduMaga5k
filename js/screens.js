@@ -224,15 +224,14 @@ function showFinish() {
     bib: C.bib ? kit.bib : null
   };
   showFinishPhotos(lastRun);
-  shareImg = null;
-  setTimeout(() => getShareFile().catch(() => {}), 0); // ready before anyone taps Instagram story
   myId = null;
   myRank = null;
   myRoute = C.id;
   boardRoute = C.id;
   const can = canSave(C.id);
   $('nameForm').hidden = !can;
-  $('saveStatus').textContent = mode && !can ? 'Leaderboards for this route open soon. Share your time instead!' : '';
+  $('saveStatus').textContent =
+    mode && !can ? 'Leaderboards for this route open soon. Screenshot your finish and tag me instead!' : '';
   if (mode === 'supa') refreshLB(C.id);
   $('submitBtn').disabled = false;
   try {
