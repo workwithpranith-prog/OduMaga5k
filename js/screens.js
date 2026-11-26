@@ -25,6 +25,7 @@ function* courseSteps(id) {
   HAS_ELEV = !!ELEV;
   ELEV_MIN = ELEV ? Math.min(...ELEV.v) : 0;
   clearWorld();
+  PHOTO_SPOTS = []; // the route re-adds its photographers if it has any
   yield 0.12;
   FOOT.length = 0;
   srnd = mulberry32(560001);
@@ -145,14 +146,12 @@ function pickRoute(id) {
   if (!C || C.id !== id) loadCourse(id).then(startRace);
   else startRace();
 }
-$('routeBack').addEventListener('click', () => {
-  $('routeScreen').hidden = true;
-  $(routeFrom || 'startScreen').hidden = false;
-});
 
 // ---------- flow ----------
 function startRace() {
   if (C.randomKit) newKit(); // fresh tee colour and bib number for every run
+  runPhotos = [];
+  PHOTO_SPOTS.forEach(p => (p.taken = false));
   holdAt = 1e12;
   $('greatRun').hidden = true;
   audioInit();
@@ -179,7 +178,6 @@ function finishRace() {
   track('finish', { km: C.km });
   const t0 = performance.now() / 1000;
   holdAt = t0 + 3.4 + treatDelay();
-  if (C.finishPhoto) R.photoPending = true;
   doneT = holdAt + 2.6;
   celebT = 0;
   toast(C.treat.toast, 3);
@@ -210,7 +208,6 @@ function showFinish() {
   $('fPace').textContent = fmtPace(pace);
   $('fPB').textContent = fmtTime(pbOf(C.id));
   $('tTitle').textContent = C.treat.title;
-  $('tText').textContent = C.treat.text;
   const c = R.counts;
   const pl = (n, a, b) => `${n} ${n === 1 ? a : b}`;
   const hits = C.hazards.map(([k, a, b]) => pl(c[k] || 0, a, b)).join(', ');
@@ -219,7 +216,6 @@ function showFinish() {
     : `${pl(c.water, 'water bottle', 'water bottles')} · ${pl(c.gel, 'gel', 'gels')}`;
   $('fTally').textContent =
     `${fuel}${ELEV ? ` · climbed ${Math.round(R.climb)} m` : ''}${c.steps ? ` · ${pl(c.steps, 'flight of steps', 'flights of steps')}` : ''} · stumbles: ${hits}`;
-  $('sharePrev').hidden = true;
   lastRun = {
     route: C.id,
     time: Math.round(t),
@@ -227,15 +223,15 @@ function showFinish() {
     climb: Math.round(R.climb || 0),
     bib: C.bib ? kit.bib : null
   };
-  showFinishPhoto(lastRun);
+  showFinishPhotos(lastRun);
   shareImg = null;
+  setTimeout(() => getShareFile().catch(() => {}), 0); // ready before anyone taps Instagram story
   myId = null;
   myRank = null;
   myRoute = C.id;
   boardRoute = C.id;
   const can = canSave(C.id);
   $('nameForm').hidden = !can;
-  $('saveNote').hidden = !can;
   $('saveStatus').textContent = mode && !can ? 'Leaderboards for this route open soon. Share your time instead!' : '';
   if (mode === 'supa') refreshLB(C.id);
   $('submitBtn').disabled = false;
@@ -278,7 +274,6 @@ $('nameForm').addEventListener('submit', async e => {
     } catch (_) {}
     $('saveStatus').textContent = rank ? `Saved. You're #${rank} on the ${C.name} board.` : 'Saved.';
     $('nameForm').hidden = true;
-    $('saveNote').hidden = true;
     renderBoards();
   };
   if (mode === 'supa') {

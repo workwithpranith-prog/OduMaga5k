@@ -120,6 +120,7 @@ function buildNice() {
     bg: '#f0742a' // orange arch on race day
   });
   buildNiceFinish();
+  buildCoursePhotographers();
   for (let k = 1; k < 10; k++) {
     if (k === 5) continue;
     roadsideSign(uOf(k * 1000), -7, [`KM ${k}`], 1.8, 1.1, '#1f6b3a', '#ffffff');
@@ -446,5 +447,33 @@ function buildTurnStub() {
   for (let d = 0; d <= L; d += 18) {
     const p = at(d, 0);
     FOOT.push({ x: p.x, z: p.z, r: W + 6 });
+  }
+}
+
+// ---------- photographers on the course (C.photoSpots): on the left verge, facing the runners coming at them ----------
+function buildCoursePhotographers() {
+  PHOTO_SPOTS = [];
+  for (const sp of C.photoSpots || []) {
+    const u = uOf(sp.s),
+      f = frame(u, {}),
+      h = hU(u),
+      lat = -6.9,
+      x = f.x + f.rx * lat,
+      z = f.z + f.rz * lat,
+      ry = Math.atan2(-f.tx, -f.tz); // facing back down the road
+    BASEY = h;
+    person(x, z, ry, 'blue');
+    const fx = -f.tx,
+      fz = -f.tz;
+    box('dark', 0.36, 0.3, 0.3, x + fx * 0.35, 1.74, z + fz * 0.35, ry); // camera
+    box('white', 0.22, 0.16, 0.12, x + fx * 0.35, 2.0, z + fz * 0.35, ry); // flash
+    for (const s of [-1, 1])
+      box('dark', 0.06, 1.4, 0.06, x + f.rx * s * 0.5 - fx * 0.6, 0, z + f.rz * s * 0.5 - fz * 0.6);
+    BASEY = null;
+    const sign = textPlane(['📷 PHOTO', sp.label], 1.8, 1, '#16140f', '#f2c230', { both: true });
+    sign.position.set(x - fx * 0.6, h + 1.9, z - fz * 0.6);
+    sign.rotation.y = Math.atan2(-f.tx, -f.tz);
+    PHOTO_SPOTS.push({ s: sp.s, label: sp.label, x: x + fx * 0.6, y: h + 1.9, z: z + fz * 0.6, taken: false });
+    FOOT.push({ x, z, r: 3 });
   }
 }

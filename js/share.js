@@ -179,65 +179,66 @@ function copyText(txt, btn) {
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, fb);
   else fb();
 }
+// Share: straight to the phone's share sheet (no preview). Desktop browsers without one get the message copied.
 $('shareBtn').addEventListener('click', () => {
   if (!lastRun) return;
   const { full } = shareInfo();
-  $('shareText').textContent = full;
-  $('sharePrev').hidden = false;
-  $('shareCopied').textContent = 'Copied. Paste it in any app.';
-  const fail = () => {
-    $('shareCopied').textContent = 'Press and hold the message to copy it.';
-  };
-  const fb = () => {
-    try {
-      const ta = document.createElement('textarea');
-      ta.value = full;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.append(ta);
-      ta.select();
-      const r = document.execCommand && document.execCommand('copy');
-      ta.remove();
-      if (!r) fail();
-    } catch (e) {
-      fail();
-    }
-  };
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(full).catch(fb);
-  else fb();
-  flashBtn('shareBtn', 'Copied!');
+  if (navigator.share) navigator.share({ title: 'Odu Maga', text: full }).catch(() => {});
+  else copyText(full, 'shareBtn');
 });
-$('copyAgain').addEventListener('click', () => {
-  if (lastRun) copyText(shareInfo().full, 'copyAgain');
-});
-$('waBtn').addEventListener('click', () => {
+
+// the main image for this run: the medal photo when there are race photos, otherwise the story card
+const mainPhoto = () =>
+  lastRun && lastRun.photos && lastRun.photos.length ? lastRun.photos[lastRun.photos.length - 1] : null;
+function saveFile(f) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(f);
+  a.download = f.name;
+  document.body.append(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+    a.remove();
+  }, 4000);
+}
+// Instagram story: a website can't open Instagram's story editor directly, so hand the image to the share sheet
+// (pick Instagram, then Stories). The file is made ahead of time: waiting for it here would lose the tap and the
+// phone would refuse to open the sheet.
+function igShare(file, btn) {
+  if (!file) {
+    flashBtn(btn, 'One sec…');
+    return;
+  }
+  if (navigator.canShare && navigator.canShare({ files: [file] }))
+    navigator.share({ files: [file] }).catch(e => {
+      if (!e || e.name !== 'AbortError') saveFile(file);
+    });
+  else {
+    saveFile(file);
+    flashBtn(btn, 'Saved: add it in Instagram');
+  }
+}
+$('igBtn').addEventListener('click', () => {
   if (!lastRun) return;
-  window.open('https://wa.me/?text=' + encodeURIComponent(shareInfo().full), '_blank', 'noopener');
+  const p = mainPhoto();
+  igShare(p ? p.file : shareImg, 'igBtn');
 });
 $('saveImg').addEventListener('click', async () => {
   if (!lastRun) return;
   try {
-    const f = lastRun.photo
-      ? new File(
-          [await new Promise(r => lastRun.photo.toBlob(r, 'image/jpeg', 0.92))],
-          `odu-maga-${lastRun.route}-finish.jpg`,
-          {
-            type: 'image/jpeg'
-          }
-        )
-      : await getShareFile();
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(f);
-    a.download = f.name;
-    document.body.append(a);
-    a.click();
-    setTimeout(() => {
-      URL.revokeObjectURL(a.href);
-      a.remove();
-    }, 4000);
+    const p = mainPhoto();
+    saveFile(p && p.file ? p.file : await getShareFile());
     flashBtn('saveImg', 'Saved!');
   } catch (e) {
     flashBtn('saveImg', 'Try again');
   }
 });
-$('copyHandle').addEventListener('click', () => copyText('@yourrunningbro', 'copyHandle'));
+// the photo viewer's own buttons act on the photo you're looking at
+$('vIg').addEventListener('click', () => lastRun && lastRun.photos && igShare(lastRun.photos[viewerAt].file, 'vIg'));
+$('vSave').addEventListener('click', () => {
+  const p = lastRun && lastRun.photos && lastRun.photos[viewerAt];
+  if (p && p.file) {
+    saveFile(p.file);
+    flashBtn('vSave', 'Saved!');
+  } else flashBtn('vSave', 'One sec…');
+});
