@@ -46,6 +46,7 @@ On a laptop: space bar to run, arrow keys to change lanes.
 | `js/hud.js`, `js/screens.js`, `js/share.js` | The heads-up display and mini-map, the screens and flow, sharing |
 | `js/audio.js`, `js/treats.js` | Music and sound effects; the 2D treat drawings |
 | `js/main.js` | The game loop and start-up |
+| `img/`, `sitemap.xml` | The link-preview card (`og.jpg`), icons, and the page list for Google. The site address is written in `index.html` and `sitemap.xml`: update both when moving to a domain |
 | `admin.html`, `js/admin.js`, `css/admin.css` | The control centre: play stats with route and period filters |
 
 The scripts are plain (not modules) and share one global scope, so the order in `index.html` matters.
