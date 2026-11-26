@@ -79,13 +79,16 @@ function makeRunner() {
   bib.visible = false;
   // finisher medal: ribbon round the neck and a gold disc on the chest (front of the runner is +z)
   const medal = pivot(body, 0, 0, 0);
+  // each strap starts at one side of the neck (top, outer end) and runs down and in to the disc;
+  // a short piece over each shoulder carries the ribbon round the back of the neck
   for (const sx of [-1, 1]) {
-    const strap = part(medal, 0.08, 0.46, 0.03, '#2f6fb3', sx * 0.12, 1.5, 0.19);
-    strap.rotation.z = sx * 0.42;
+    const strap = part(medal, 0.08, 0.46, 0.03, '#2f6fb3', sx * 0.1, 1.53, 0.215);
+    strap.rotation.z = -sx * 0.42;
+    part(medal, 0.08, 0.03, 0.3, '#2f6fb3', sx * 0.19, 1.705, 0.06);
   }
-  const disc = cyl(medal, 0.15, 0.15, 0.05, '#e3b23c', 0, 1.25, 0.21, 16);
+  const disc = cyl(medal, 0.15, 0.15, 0.05, '#e3b23c', 0, 1.25, 0.235, 16);
   disc.rotation.x = Math.PI / 2;
-  part(medal, 0.12, 0.12, 0.02, '#c9902a', 0, 1.25, 0.245);
+  part(medal, 0.12, 0.12, 0.02, '#c9902a', 0, 1.25, 0.27);
   medal.visible = false;
   // the tee gets its own material so its colour can change per run without touching anything else red
   const teeMat = new THREE.MeshLambertMaterial({ color: TEE });
