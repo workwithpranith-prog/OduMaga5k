@@ -96,7 +96,8 @@ function newRace() {
     seen: {},
     aidDone: {},
     aidWarn: {},
-    photoPending: false,
+    photoPending: null, // an on-course photographer to snap this frame
+    medalShot: false,
     counts: { water: 0, gel: 0, aid: 0, auto: 0, cow: 0, dog: 0 }
   };
   buildCourse((Math.random() * 1e9) | 0);
@@ -212,6 +213,12 @@ function update(dt, now) {
         R.hillT = 14;
       }
     }
+    // on-course photographers (NICE): snap as you run up to each one, about 60 m out
+    for (const spot of PHOTO_SPOTS)
+      if (!spot.taken && R.s >= spot.s - 60 && R.s < spot.s) {
+        spot.taken = true;
+        R.photoPending = spot;
+      }
     // aid stations (NICE): a table on the left every 2 km; be in the left lane as you pass it to grab a drink
     if (C.aid)
       C.aid.forEach((as, i) => {
@@ -399,9 +406,14 @@ function place(dt) {
   }
   runner.g.visible = !(R.invuln > 0 && R.stumble <= 0 && Math.floor(elapsed * 14) % 2 === 0);
   runner.medal.visible = !!C.medal && state === 'done' && celebT > 0.15;
+  // race photos: on-course photographers as you reach them, then the medal shot once you've stopped to celebrate
   if (R.photoPending) {
-    R.photoPending = false;
-    takeFinishPhoto(); // the runner is on the line this frame
+    takeCoursePhoto(R.photoPending); // the runner is in position this frame
+    R.photoPending = null;
+  }
+  if (C.finishPhoto && state === 'done' && !R.medalShot && celebT > 0.9) {
+    R.medalShot = true;
+    takeMedalPhoto();
   }
   // trophy: the route's treat rises above the runner at the finish
   const tnow = performance.now() / 1000,

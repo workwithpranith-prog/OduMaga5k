@@ -7,7 +7,7 @@ function openBoard(from) {
   $('boardScreen').hidden = false;
   if (mode === 'supa') refreshLB();
   renderBoards();
-  $('boardBack').focus();
+  $('backBtn').focus();
 }
 function closeBoard() {
   $('boardScreen').hidden = true;
@@ -15,7 +15,6 @@ function closeBoard() {
 }
 $('openBoard1').addEventListener('click', () => openBoard('startScreen'));
 $('openBoard2').addEventListener('click', () => openBoard('finishScreen'));
-$('boardBack').addEventListener('click', closeBoard);
 $('boardRun').addEventListener('click', () => {
   $('boardScreen').hidden = true;
   pickRoute(boardRoute);
@@ -51,6 +50,7 @@ function loop() {
   if (state === 'done' && now >= doneT && !finishShown) showFinish();
   if (R) place(dt);
   tickFlash(dt);
+  navTick();
   if (!reduced) {
     TEX.water.offset.x = elapsed * 0.03;
     TEX.water.offset.y = elapsed * 0.012;

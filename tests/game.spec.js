@@ -64,6 +64,15 @@ for (const id of ROUTES) {
     await expect(page.locator('#elevChip')).toBeVisible({ visible: id !== 'cubbon' });
     await expect(page.locator('#miniMap')).toBeVisible({ visible: id !== 'cubbon' });
     await info.attach(`${id}.png`, { body: await page.screenshot(), contentType: 'image/png' });
+    // Back during a run asks first, then quits to the route picker
+    await page.click('#backBtn');
+    await expect(page.locator('#backBtn')).toHaveText('Tap again to quit');
+    await expect(page.locator('#routeScreen')).toBeHidden();
+    await page.click('#backBtn');
+    await expect(page.locator('#routeScreen')).toBeVisible();
+    await page.click('#backBtn'); // and from the route picker, back home
+    await expect(page.locator('#startScreen')).toBeVisible();
+    await expect(page.locator('#backBtn')).toBeHidden();
     expect(errors).toEqual([]);
   });
 }
@@ -77,11 +86,12 @@ test('ulsoor: full run, finish screen, share text, one music track at a time', a
   await expect(page.locator('#finishScreen')).toBeVisible();
   expect(await players()).toBeLessThanOrEqual(1);
 
-  // Share copies the message (no food line, Instagram follow link) and opens no other app
+  // Share goes straight to the share sheet; a desktop browser without one gets the message copied instead.
+  // The message has no food line and ends with the Instagram follow link; no other app or tab opens.
   const popups = [];
   page.context().on('page', p => popups.push(p));
   await page.click('#shareBtn');
-  await expect(page.locator('#sharePrev')).toBeVisible();
+  await expect(page.locator('#shareBtn')).toHaveText('Copied!');
   const text = await page.evaluate(() => navigator.clipboard.readText());
   expect(text).toContain('Ulsoor Lake 3K');
   expect(text).toContain('https://www.instagram.com/yourrunningbro');
@@ -94,11 +104,14 @@ test('ulsoor: full run, finish screen, share text, one music track at a time', a
   await page.waitForTimeout(1000);
   await expect(page.locator('#boardScreen')).toBeVisible();
   await expect(page.locator('#finishScreen')).toBeHidden();
-  await page.click('#boardBack');
+  await page.click('#backBtn');
+  await expect(page.locator('#finishScreen')).toBeVisible();
   await page.click('#changeRoute');
   await page.waitForTimeout(1000);
   await expect(page.locator('#routeScreen')).toBeVisible();
   await expect(page.locator('#finishScreen')).toBeHidden();
+  await page.click('#backBtn'); // back from the route picker returns to the finish screen
+  await expect(page.locator('#finishScreen')).toBeVisible();
   expect(await players()).toBeLessThanOrEqual(1);
   expect(errors).toEqual([]);
 });

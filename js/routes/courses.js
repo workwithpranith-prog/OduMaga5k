@@ -172,7 +172,11 @@ const COURSES = {
     // race-day extras on this route only
     aid: [2000, 4000, 6000, 8000], // aid-station tables on the left: run in the left lane to refuel
     medal: true, // finisher medal on the runner's neck before the treat
-    finishPhoto: true, // the photographer at the line takes your photo
+    finishPhoto: true, // the photographer on the finish riser takes your medal photo
+    photoSpots: [
+      { s: 3000, label: 'KM 3' },
+      { s: 7000, label: 'KM 7' }
+    ], // photographers on the course
     runOut: 28, // metres the runner can coast past the line into the finish area
     cheer: 'NICE RUN!', // the big end-of-race banner
     bib: { event: 'ODU MAGA 10K', number: '1001' }, // race bib on the runner's tee
