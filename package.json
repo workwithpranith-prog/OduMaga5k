@@ -3,8 +3,8 @@
   "private": true,
   "description": "Blocky 3D runs around Bengaluru. Static site: open index.html, no build step.",
   "scripts": {
-    "format": "prettier --write \"index.html\" \"css/**/*.css\" \"js/**/*.js\" \"tests/**/*.js\" \"tools/**/*.mjs\"",
-    "format:check": "prettier --check \"index.html\" \"css/**/*.css\" \"js/**/*.js\" \"tests/**/*.js\" \"tools/**/*.mjs\"",
+    "format": "prettier --write \"*.html\" \"css/**/*.css\" \"js/**/*.js\" \"tests/**/*.js\" \"tools/**/*.mjs\"",
+    "format:check": "prettier --check \"*.html\" \"css/**/*.css\" \"js/**/*.js\" \"tests/**/*.js\" \"tools/**/*.mjs\"",
     "lint": "node tools/lint.mjs",
     "test": "playwright test",
     "check": "npm run format:check && npm run lint && npm test"

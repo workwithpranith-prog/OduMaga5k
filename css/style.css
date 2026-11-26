@@ -1069,3 +1069,10 @@ input {
   outline: 3px solid var(--paper);
   outline-offset: 2px;
 }
+.privacy {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.7;
+  text-align: center;
+}

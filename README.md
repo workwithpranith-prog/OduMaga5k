@@ -26,6 +26,8 @@ On a laptop: space bar to run, arrow keys to change lanes.
 - 3D: [three.js](https://threejs.org/) r128, loaded from cdnjs.
 - Music and sound effects: an original chiptune for each route, generated live with the Web Audio API.
 - Leaderboard: a [Supabase](https://supabase.com/) table (`scores`: name, time, pace, route, posted at). Anyone can read and add scores; nobody can edit or delete them through the site. Per-route boards use the `route` column added by `supabase/add_route_column.sql`.
+- Play stats: a `run_events` table. The game sends anonymous events (opened, started, each km, finished, quit, posted a time) with a random player code kept on the phone, the link tag (`?ref=`), device type, system, browser, language, time zone and stumble count. No names, no location. Anyone can add events; nobody can read them through the site.
+- Control centre: `admin.html` (not linked from the game). It asks the database function `admin_dashboard` for totals, and the function only answers with the right password. Set up by `supabase/control_centre.sql`, which also shows how to change the password.
 - Hosting: [GitHub Pages](https://pages.github.com/), deployed from the `main` branch of this repo. Every merge to `main` goes live in about a minute.
 
 ### Where things live
@@ -44,6 +46,7 @@ On a laptop: space bar to run, arrow keys to change lanes.
 | `js/hud.js`, `js/screens.js`, `js/share.js` | The heads-up display and mini-map, the screens and flow, sharing |
 | `js/audio.js`, `js/treats.js` | Music and sound effects; the 2D treat drawings |
 | `js/main.js` | The game loop and start-up |
+| `admin.html`, `js/admin.js`, `css/admin.css` | The control centre: play stats with route and period filters |
 
 The scripts are plain (not modules) and share one global scope, so the order in `index.html` matters.
 
@@ -53,7 +56,7 @@ Install once with `npm install`, then:
 
 - `npm run format`: tidy the formatting (Prettier)
 - `npm run lint`: catch typos and names that are defined nowhere, across all the scripts
-- `npm test`: play every route in a headless browser, plus a full Ulsoor run that checks the finish screen, the share text and the music (`npx playwright install chromium` the first time)
+- `npm test`: play every route in a headless browser, plus a full Ulsoor run that checks the finish screen, the share text and the music, and the control centre with made-up numbers (`npx playwright install chromium` the first time)
 
 GitHub runs all three on every pull request (`.github/workflows/check.yml`).
 
