@@ -3,7 +3,8 @@
 // The Oct 2026 race: 5 km out along the expressway, U-turn, 5 km back on the other carriageway. Fully open, rolling hills.
 const NOFF = 6.3; // carriageway centre to median centre (world units)
 let NICE_TURN = 0.5,
-  TURN_C = { x: 0, z: 0 };
+  TURN_C = { x: 0, z: 0 },
+  TURN_T = { tx: 0, tz: 1 }; // the road's direction at the 5 km turnaround
 function nicePath() {
   ORIGIN = { lat: NICE_GPS[0][0], lng: NICE_GPS[0][1] };
   const P = smoothPts(
@@ -59,6 +60,7 @@ function nicePath() {
   };
   const race = [...out, ...turn, ...back];
   TURN_C = P[e];
+  TURN_T = T[e];
   return { raw: [...race, ...home], raceRaw: len(race) };
 }
 function pylon(x, z, ry) {
@@ -214,6 +216,7 @@ function buildNice() {
     BASEY = null;
     FOOT.push({ x: TURN_C.x, z: TURN_C.z, r: 6 });
   }
+  buildTurnStub();
   // aid stations: a table on the left-hand shoulder every 2 km (run in the left lane to grab a drink)
   for (const s of C.aid) {
     const { R, c, ry } = site(uOf(s), -4.95, 4);
@@ -370,8 +373,78 @@ function buildNiceFinish() {
     const c = { x: f.x + f.rx * o, z: f.z + f.rz * o };
     const sign = textPlane(['ROAD CLOSED', 'Race in progress'], 4, 1.2, '#b5401f', '#ffffff', { both: true });
     sign.position.set(c.x, p.h + 1.6, c.z);
-    sign.rotation.y = ry;
+    sign.rotation.y = ry + Math.PI; // face the finishers, so the text reads the right way round
     box('dark', 0.12, 1.6, 0.12, c.x, 0, c.z);
   }
   BASEY = null;
+}
+
+// ---------- beyond the 5 km U-turn: the expressway carries on, closed off ----------
+// Not part of the race path, so it's built from flat strips: both carriageways, the median, edge barriers,
+// then barricades and marshals across it just past the U-turn so everyone turns back.
+function flatStrip(at, d0, d1, l0, l1, y, mat, unit) {
+  const a = at(d0, l0),
+    b = at(d0, l1),
+    c = at(d1, l0),
+    d = at(d1, l1);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute([a.x, y, a.z, b.x, y, b.z, c.x, y, c.z, d.x, y, d.z], 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0], 3));
+  const lu = (l1 - l0) / unit,
+    du = (d1 - d0) / unit;
+  g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, lu, 0, 0, du, lu, du], 2));
+  g.setIndex([0, 2, 1, 1, 2, 3]);
+  world.add(new THREE.Mesh(g, mat));
+}
+function buildTurnStub() {
+  const o = NOFF,
+    h = hU(NICE_TURN),
+    t = TURN_T,
+    rx = -t.tz,
+    rz = t.tx,
+    L = 400,
+    W = o + 5.8;
+  const at = (d, l) => ({ x: TURN_C.x + t.tx * d + rx * l, z: TURN_C.z + t.tz * d + rz * l });
+  const ry = Math.atan2(t.tx, t.tz);
+  flatStrip(at, 0, L, -W, W, h + 0.03, matAsphalt, 3);
+  flatStrip(at, 14, L, -1.8, 1.8, h + 0.34, matMedian, 2);
+  for (const s of [-1, 1]) flatStrip(at, 14, L, s * (o + 4.25), s * (o + 4.45), h + 0.05, matLineY, 1);
+  BASEY = h;
+  for (let d = 16; d < L; d += 3.5)
+    for (const l of [-o - 1.3, -o + 1.3, o - 1.3, o + 1.3]) {
+      const p = at(d, l);
+      box('white', 0.16, 0.06, 1.4, p.x, 0, p.z, ry);
+    }
+  for (const s of [-1, 1]) {
+    const m = at(L / 2, s * (W + 0.1));
+    box('soil', 0.3, 2, L, m.x, -2, m.z, ry); // embankment edge
+    for (let d = 2; d < L; d += 4) {
+      const p = at(d, s * (W - 0.3));
+      box('dark', 0.18, 0.95, 0.18, p.x, 0, p.z);
+    }
+    const b = at(L / 2, s * (W - 0.3));
+    box('concrete', 0.12, 0.35, L, b.x, 0.55, b.z, ry); // crash barrier
+  }
+  // barricades right after the U-turn, across both carriageways
+  const bd = o + 7.5;
+  for (let l = -W + 0.6, i = 0; l <= W - 0.6; l += 1.3, i++) {
+    const p = at(bd, l);
+    box(i % 2 ? 'white' : 'red', 1.25, 0.5, 0.08, p.x, 0.45, p.z, ry);
+    box(i % 2 ? 'red' : 'white', 1.25, 0.2, 0.08, p.x, 0.2, p.z, ry);
+  }
+  for (const l of [-o - 3, o + 3, -o + 2, o - 2]) {
+    const p = at(bd + 1.5, l);
+    person(p.x, p.z, ry, 'orange');
+  }
+  BASEY = null;
+  for (const s of [-1, 1]) {
+    const p = at(bd + 0.3, s * o);
+    const sign = textPlane(['ROAD CLOSED', 'Turn around'], 4, 1.2, '#b5401f', '#ffffff', { both: true });
+    sign.position.set(p.x, h + 1.7, p.z);
+    sign.rotation.y = ry + Math.PI; // face the runners coming into the turn
+  }
+  for (let d = 0; d <= L; d += 18) {
+    const p = at(d, 0);
+    FOOT.push({ x: p.x, z: p.z, r: W + 6 });
+  }
 }

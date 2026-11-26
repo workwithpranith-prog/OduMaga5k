@@ -27,6 +27,18 @@ function makeRunner() {
   part(body, 0.5, 0.5, 0.5, SKIN, 0, 1.95, 0);
   part(body, 0.52, 0.16, 0.52, '#16120f', 0, 2.24, 0);
   part(body, 0.52, 0.24, 0.1, '#16120f', 0, 2.08, -0.22);
+  // a happy face on the front of the head (+z): eyes with a sparkle, raised brows, nose, a big open smile, cheeks, ears
+  for (const sx of [-1, 1]) {
+    part(body, 0.08, 0.09, 0.03, '#16120f', sx * 0.11, 2.0, 0.255); // eye
+    part(body, 0.03, 0.03, 0.02, '#ffffff', sx * 0.11 - 0.02, 2.025, 0.272); // sparkle
+    part(body, 0.12, 0.03, 0.03, '#16120f', sx * 0.11, 2.12, 0.255); // brows, flat and raised
+    part(body, 0.07, 0.05, 0.02, '#c26a55', sx * 0.17, 1.9, 0.256); // cheek
+    part(body, 0.06, 0.14, 0.1, SKIN, sx * 0.28, 1.96, 0); // ear
+    part(body, 0.05, 0.05, 0.03, '#5a1e1e', sx * 0.1, 1.85, 0.256); // smile corner, turned up
+  }
+  part(body, 0.07, 0.08, 0.06, '#7a4a30', 0, 1.94, 0.27); // nose
+  part(body, 0.16, 0.07, 0.03, '#5a1e1e', 0, 1.81, 0.256); // open smile
+  part(body, 0.13, 0.025, 0.03, '#ffffff', 0, 1.835, 0.262); // teeth
   const legs = [],
     arms = [];
   for (const sx of [-1, 1]) {
@@ -471,6 +483,53 @@ function makeTrophyNice() {
   cyl(cf, 0.18, 0.18, 0.03, '#e9eecf', 0, 0.95, 0, 10);
   const straw = cyl(cf, 0.035, 0.035, 0.7, '#ff3fa4', 0.06, 1.2, 0, 8);
   straw.rotation.z = -0.3;
+  return g;
+}
+
+// aid station marker (NICE): a water bottle and a gel spinning over the table, and a slowly pulsing sign above
+function makeAidFx() {
+  const g = new THREE.Group(),
+    prize = pivot(g, 0, 2, 0),
+    spin = pivot(prize, 0, 0, 0);
+  prize.scale.setScalar(1.7); // big enough to spot from down the road
+  const clear = new THREE.MeshLambertMaterial({ color: '#8fd0f2', transparent: true, opacity: 0.85 });
+  const bottle = new THREE.Mesh(gk(0.4, 0.8, 0.4), clear);
+  bottle.position.x = -0.4;
+  spin.add(bottle);
+  part(spin, 0.24, 0.14, 0.24, '#1f6fd1', -0.4, 0.47, 0);
+  part(spin, 0.56, 0.8, 0.16, '#c6f03a', 0.4, 0, 0);
+  part(spin, 0.58, 0.24, 0.17, '#1b1915', 0.4, 0.08, 0);
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(1, 1.25, 28),
+    new THREE.MeshBasicMaterial({ color: '#6fd07a', transparent: true, opacity: 0.6, side: DS })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = -0.62;
+  prize.add(ring);
+  const c = document.createElement('canvas');
+  c.width = 512;
+  c.height = 170;
+  const x = c.getContext('2d');
+  x.fillStyle = '#1f6b3a';
+  x.fillRect(0, 0, 512, 170);
+  x.strokeStyle = '#ffffff';
+  x.lineWidth = 10;
+  x.strokeRect(10, 10, 492, 150);
+  x.fillStyle = '#ffffff';
+  x.textAlign = 'center';
+  x.font = '700 76px "Pixelify Sans", "Courier New", monospace';
+  x.fillText('AID STATION', 256, 92);
+  x.font = '700 34px "Pixelify Sans", "Courier New", monospace';
+  x.fillStyle = '#c6f03a';
+  x.fillText('Keep left to grab a drink', 256, 140);
+  const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = maxAniso;
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.53), new THREE.MeshBasicMaterial({ map: tex, side: DS }));
+  sign.position.y = 4.4;
+  sign.rotation.y = Math.PI; // face the runners coming up the road
+  g.add(sign);
+  g.userData = { prize, spin, sign };
+  scene.add(g);
   return g;
 }
 

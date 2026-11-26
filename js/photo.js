@@ -26,8 +26,14 @@ function takeFinishPhoto() {
     rz = f.z + f.rz * R.lat;
   photoCam.position.set(PHOTOG.x, PHOTOG.y, PHOTOG.z);
   photoCam.lookAt(rx, gy + 1.3, rz); // centred on the runner
+  const medalWas = runner.medal.visible;
+  runner.medal.visible = !!C.medal; // the photo shows the medal you've just earned
+  const hidden = objs.filter(o => o.type === 'racer' && o.g.visible); // keep other runners out of your photo
+  hidden.forEach(o => (o.g.visible = false));
   renderer.setRenderTarget(photoRT);
   renderer.render(scene, photoCam);
+  runner.medal.visible = medalWas;
+  hidden.forEach(o => (o.g.visible = true));
   const px = new Uint8Array(PHOTO_W * PHOTO_H * 4);
   renderer.readRenderTargetPixels(photoRT, 0, 0, PHOTO_W, PHOTO_H, px);
   renderer.setRenderTarget(null);
