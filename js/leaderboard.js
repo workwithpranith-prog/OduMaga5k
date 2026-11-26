@@ -217,11 +217,84 @@ const SESSION = (() => {
     return (String(Math.random()).slice(2) + '00000000').slice(0, 16);
   }
 })();
+// a random player code kept on this device, so one person playing on several days counts once (it is not a name)
+const PLAYER = (() => {
+  try {
+    let id = localStorage.getItem('odumaga.player');
+    if (!/^[0-9a-f]{16,32}$/.test(id || '')) {
+      const a = new Uint8Array(12);
+      crypto.getRandomValues(a);
+      id = Array.from(a, b => b.toString(16).padStart(2, '0')).join('');
+      localStorage.setItem('odumaga.player', id);
+    }
+    return id;
+  } catch (e) {
+    return SESSION; // private browsing: fall back to this visit
+  }
+})();
+// where the link came from: ?ref=insta (letters, digits, - and _), or 'challenge' for a beat-my-time link
+const REF = (() => {
+  const q = new URLSearchParams(location.search),
+    r = (q.get('ref') || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]/g, '')
+      .slice(0, 24);
+  return r || (q.get('r') ? 'challenge' : null);
+})();
+// the kind of device and browser, from the browser's own description of itself (no location, nothing personal)
+const DEVICE = (() => {
+  const ua = navigator.userAgent || '',
+    ipad = /iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const os = /Android/.test(ua)
+    ? 'Android'
+    : /iPhone|iPod/.test(ua) || ipad
+      ? 'iOS'
+      : /Windows/.test(ua)
+        ? 'Windows'
+        : /Mac OS X/.test(ua)
+          ? 'macOS'
+          : /CrOS/.test(ua)
+            ? 'ChromeOS'
+            : /Linux/.test(ua)
+              ? 'Linux'
+              : 'Other';
+  const browser = /Instagram/.test(ua)
+    ? 'Instagram'
+    : /FBAN|FBAV|FB_IAB/.test(ua)
+      ? 'Facebook'
+      : /WhatsApp/.test(ua)
+        ? 'WhatsApp'
+        : /SamsungBrowser/.test(ua)
+          ? 'Samsung'
+          : /Edg\//.test(ua)
+            ? 'Edge'
+            : /Firefox|FxiOS/.test(ua)
+              ? 'Firefox'
+              : /Chrome|CriOS/.test(ua)
+                ? 'Chrome'
+                : /Safari/.test(ua)
+                  ? 'Safari'
+                  : 'Other';
+  const device =
+    ipad || /Tablet/.test(ua) || (/Android/.test(ua) && !/Mobile/.test(ua))
+      ? 'tablet'
+      : /Mobi|iPhone|Android/.test(ua)
+        ? 'phone'
+        : 'desktop';
+  let tz = null;
+  try {
+    tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || '').slice(0, 40) || null;
+  } catch (e) {}
+  return { device, os, browser, lang: (navigator.language || '').slice(0, 16) || null, tz };
+})();
+// stumbles this run: every bump into something (pickups, aid stations and steps aren't stumbles)
+const hitsOf = c =>
+  Object.entries(c).reduce((n, [k, v]) => (['water', 'gel', 'aid', 'steps'].includes(k) ? n : n + v), 0);
 let runNo = 0,
   quitSent = false;
 function track(event, extra = {}) {
   if (mode !== 'supa') return;
-  let body = { session: SESSION, run_no: runNo, event };
+  let body = { session: SESSION, run_no: runNo, event, player: PLAYER, ref: REF, ...DEVICE };
   if (event !== 'open' && R) {
     const c = R.counts || {};
     body = {
@@ -234,7 +307,8 @@ function track(event, extra = {}) {
       cows: c.cow || 0,
       dogs: c.dog || 0,
       taps: Math.min(200000, R.tapCount || 0),
-      min_energy: Math.round(Math.max(0, Math.min(100, R.minE ?? 100)))
+      min_energy: Math.round(Math.max(0, Math.min(100, R.minE ?? 100))),
+      hits: Math.min(500, hitsOf(c))
     };
     if (routeCol && C) body.route = C.id;
   }
