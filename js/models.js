@@ -65,17 +65,14 @@ function makeRunner() {
   sh.position.y = 0.04;
   g.add(sh);
   scene.add(g);
-  // race bib, front and back (routes with bib: true); paintBib() draws the number once the fonts are in
+  // race bib on the front (routes with bib: true); paintBib() draws the number once the fonts are in
   const bibTex = new THREE.CanvasTexture(document.createElement('canvas'));
   bibTex.anisotropy = maxAniso;
   const bibMat = new THREE.MeshLambertMaterial({ map: bibTex });
   const bib = pivot(body, 0, 0, 0);
-  for (const sz of [1, -1]) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.34), bibMat);
-    m.position.set(0, 1.36, sz * 0.195);
-    if (sz < 0) m.rotation.y = Math.PI;
-    bib.add(m);
-  }
+  const bibFront = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.34), bibMat); // front only, like a real race
+  bibFront.position.set(0, 1.36, 0.195);
+  bib.add(bibFront);
   bib.visible = false;
   // finisher medal: ribbon round the neck and a gold disc on the chest (front of the runner is +z)
   const medal = pivot(body, 0, 0, 0);
