@@ -7,7 +7,7 @@ const LD = {
   cv: $('loaderCanvas'),
   p: 0, // shown progress, 0..1 (eases towards target)
   target: 0,
-  shown: true,
+  shown: false,
   bowT: 0, // seconds since the lacing finished
   done: null, // resolves loaderDone()
   last: performance.now()
@@ -199,7 +199,4 @@ function loaderHide() {
   LD.el.hidden = true;
   LD.shown = false;
 }
-// the page opens on the loading screen; start lacing while the fonts and 3D engine arrive
 $('loaderTip').textContent = LD_TIPS[ldTip];
-LD.target = 0.12;
-requestAnimationFrame(ldTick);

@@ -110,8 +110,10 @@ test('ulsoor: full run, finish screen, copy handle, leaderboard table, one music
   expect(errors).toEqual([]);
 });
 
-test('runner name: asked once on the intro screen, remembered after a reload', async ({ page }) => {
+test('opens on the intro screen; runner name is asked once and remembered after a reload', async ({ page }) => {
   const errors = await openGame(page);
+  await expect(page.locator('#startScreen')).toBeVisible();
+  await expect(page.locator('#loader')).toBeHidden(); // no loading screen when the link opens
   await expect(page.locator('#runnerBox')).toBeVisible();
   await page.fill('#runnerName', '  Pranith   K ');
   await page.click('#runnerSave');

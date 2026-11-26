@@ -107,14 +107,15 @@ function* courseSteps(id) {
 }
 // build a route behind the lacing screen; resolves once the screen has faded out
 const paintFrame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
-async function loadCourse(id) {
-  loaderShow(`Lacing up for ${(COURSES[id] || COURSES.cubbon).name}`);
+// quiet: build without the loading screen (the first route, behind the intro screen)
+async function loadCourse(id, quiet = false) {
+  if (!quiet) loaderShow(`Lacing up for ${(COURSES[id] || COURSES.cubbon).name}`);
   await paintFrame();
   for (const t of courseSteps(id)) {
-    loaderProgress(t);
+    if (!quiet) loaderProgress(t);
     await paintFrame();
   }
-  await loaderDone();
+  if (!quiet) await loaderDone();
 }
 // ---------- challenge links: ?r=route&t=seconds&n=name ----------
 const QS = new URLSearchParams(location.search);
@@ -270,13 +271,10 @@ function showFinish() {
   myRank = null;
   myRoute = C.id;
   boardRoute = C.id;
-  // with a saved name it's one tap ("Post my time as …"); otherwise the name form
+  // the name from the start screen is used straight away; only a runner who skipped it gets the name form
   const can = canSave(C.id),
     known = getName();
-  $('postWrap').hidden = !(can && known);
   $('nameForm').hidden = !(can && !known);
-  $('postBtn').textContent = `Post my time as ${known}`;
-  $('postBtn').disabled = false;
   $('saveStatus').textContent =
     mode && !can ? 'Leaderboards for this route open soon. Screenshot your finish and tag me instead!' : '';
   if (mode === 'supa') refreshLB(C.id);
@@ -286,11 +284,13 @@ function showFinish() {
   renderBoards();
   $('finishScreen').hidden = false;
   if (AU.on) music.start();
+  if (can && known) postTime(known, true); // posted with the name from the start screen
 }
 let submitting = false,
   savedRun = -1;
 // posting a time: the one-tap button and the name form both come here
-async function postTime(raw) {
+// auto: posted on its own with the start-screen name, so failures retry by themselves (there's no button to tap)
+async function postTime(raw, auto = false, attempt = 1) {
   if (!mode || submitting || savedRun === runNo) return;
   submitting = true;
   const name = cleanName(raw);
@@ -302,7 +302,7 @@ async function postTime(raw) {
   const time = Math.round(R.clock),
     pace = Math.round(R.clock / C.km),
     route = C.id;
-  $('submitBtn').disabled = $('postBtn').disabled = true;
+  $('submitBtn').disabled = true;
   $('saveStatus').textContent = 'Saving…';
   const done = (id, rank) => {
     savedRun = runNo;
@@ -313,8 +313,8 @@ async function postTime(raw) {
     myRoute = route;
     lastSubmitted = { id, name, time, pace };
     setName(name);
-    $('saveStatus').textContent = rank ? `Saved. You're #${rank} on the ${C.name} board.` : 'Saved.';
-    $('nameForm').hidden = $('postWrap').hidden = true;
+    $('saveStatus').textContent = rank ? `Saved as ${name} · #${rank} on the ${C.name} board.` : `Saved as ${name}.`;
+    $('nameForm').hidden = true;
     renderBoards();
   };
   if (mode === 'supa') {
@@ -324,9 +324,16 @@ async function postTime(raw) {
       refreshLB(route);
     } catch (err) {
       submitting = false;
-      $('submitBtn').disabled = $('postBtn').disabled = false;
-      $('saveStatus').textContent =
-        err && err.status === 400
+      $('submitBtn').disabled = false;
+      const run = runNo;
+      if (auto && attempt < 4 && !(err && err.status === 400)) {
+        $('saveStatus').textContent = 'Could not save just now. Trying again…';
+        setTimeout(() => runNo === run && postTime(name, true, attempt + 1), 3000 * attempt);
+        return;
+      }
+      $('saveStatus').textContent = auto
+        ? "Couldn't save your time. Check your connection."
+        : err && err.status === 400
           ? "That time couldn't be saved. Check the name and try again."
           : 'Could not save just now. Check your connection and tap Submit again.';
     }
@@ -335,11 +342,4 @@ async function postTime(raw) {
 $('nameForm').addEventListener('submit', e => {
   e.preventDefault();
   postTime($('nameInput').value);
-});
-$('postBtn').addEventListener('click', () => postTime(getName()));
-$('postChange').addEventListener('click', () => {
-  $('postWrap').hidden = true;
-  $('nameForm').hidden = false;
-  $('nameInput').focus();
-  $('nameInput').select();
 });

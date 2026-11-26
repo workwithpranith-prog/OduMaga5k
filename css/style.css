@@ -1069,12 +1069,3 @@ input {
   outline: 3px solid var(--paper);
   outline-offset: 2px;
 }
-.postWrap {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-start;
-}
-.postWrap .btn {
-  width: 100%;
-}

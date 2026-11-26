@@ -68,7 +68,7 @@ function loop() {
 // ---------- start-up: wait for the pixel fonts (signs are drawn with them), then build the first route ----------
 async function startGame() {
   requestAnimationFrame(loop);
-  await loadCourse(CH ? CH.r : 'cubbon');
+  await loadCourse(CH ? CH.r : 'cubbon', true); // the intro screen is already showing; Pick a route waits for this
   state = 'idle';
   $('startBtn').disabled = false;
   $('startBtn').textContent = CH && CH.t ? 'Take the challenge' : 'Pick a route';
