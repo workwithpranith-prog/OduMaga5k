@@ -54,7 +54,8 @@ function paintTabs() {
 function renderBoards() {
   const on = !!mode;
   $('topWrap').hidden = !on;
-  $('openBoard1').hidden = $('openBoard2').hidden = !on;
+  $('fullWrap').hidden = !on;
+  $('openBoard1').hidden = !on;
   if (!on) return;
   paintTabs();
   const L = lbOf(boardRoute),
@@ -62,8 +63,10 @@ function renderBoards() {
     info = ROUTE_INFO[boardRoute],
     mine = myRoute === boardRoute;
   $('dTitle').textContent = `${info.name} · ${info.km}K`;
+  $('fullTitle').textContent = `Leaderboard · ${info.name} ${info.km}K`;
   for (const [id, max] of [
     ['topBoard', 5],
+    ['fullBoard', 100],
     ['dTop', 20]
   ]) {
     const el = $(id);

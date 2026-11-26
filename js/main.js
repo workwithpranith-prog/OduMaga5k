@@ -14,7 +14,6 @@ function closeBoard() {
   if (boardFrom) $(boardFrom).hidden = false;
 }
 $('openBoard1').addEventListener('click', () => openBoard('startScreen'));
-$('openBoard2').addEventListener('click', () => openBoard('finishScreen'));
 $('boardRun').addEventListener('click', () => {
   $('boardScreen').hidden = true;
   pickRoute(boardRoute);

@@ -77,7 +77,9 @@ for (const id of ROUTES) {
   });
 }
 
-test('ulsoor: full run, finish screen, share text, one music track at a time', async ({ page }, info) => {
+test('ulsoor: full run, finish screen, copy handle, leaderboard table, one music track at a time', async ({
+  page
+}, info) => {
   const errors = await openGame(page, { countMusic: true });
   const players = () => page.evaluate(() => window.__music.size);
   await page.keyboard.press('Space'); // unlocks audio like a first tap
@@ -86,26 +88,18 @@ test('ulsoor: full run, finish screen, share text, one music track at a time', a
   await expect(page.locator('#finishScreen')).toBeVisible();
   expect(await players()).toBeLessThanOrEqual(1);
 
-  // Share goes straight to the share sheet; a desktop browser without one gets the message copied instead.
-  // The message has no food line and ends with the Instagram follow link; no other app or tab opens.
-  const popups = [];
-  page.context().on('page', p => popups.push(p));
-  await page.click('#shareBtn');
-  await expect(page.locator('#shareBtn')).toHaveText('Copied!');
-  const text = await page.evaluate(() => navigator.clipboard.readText());
-  expect(text).toContain('Ulsoor Lake 3K');
-  expect(text).toContain('https://www.instagram.com/yourrunningbro');
-  expect(text).not.toMatch(/honey|chai|earned/i);
-  expect(popups).toHaveLength(0);
+  // the finish screen: "screenshot this and tag me" with a Copy button, and the leaderboard table under the name form
+  await expect(page.locator('#shareBtn')).toHaveCount(0);
+  await page.click('#copyHandle');
+  await expect(page.locator('#copyHandle')).toHaveText('Copied!');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('@yourrunningbro');
+  await expect(page.locator('#fullWrap')).toBeVisible();
+  // (the name form itself is hidden in tests, since Supabase is blocked; its status line sits right under it)
+  const formY = (await page.locator('#saveStatus').boundingBox()).y;
+  expect((await page.locator('#fullWrap').boundingBox()).y).toBeGreaterThan(formY);
   await info.attach('finish.png', { body: await page.screenshot(), contentType: 'image/png' });
 
   // leaving the finish screen must not re-open it or start a second track
-  await page.click('#openBoard2', { force: true });
-  await page.waitForTimeout(1000);
-  await expect(page.locator('#boardScreen')).toBeVisible();
-  await expect(page.locator('#finishScreen')).toBeHidden();
-  await page.click('#backBtn');
-  await expect(page.locator('#finishScreen')).toBeVisible();
   await page.click('#changeRoute');
   await page.waitForTimeout(1000);
   await expect(page.locator('#routeScreen')).toBeVisible();
