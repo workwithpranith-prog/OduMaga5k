@@ -12,7 +12,8 @@ function pbOf(id) {
   }
   return PBS[id];
 }
-function loadCourse(id) {
+// builds a route in stages, handing back how far along it is, so the loading screen can move between stages
+function* courseSteps(id) {
   C = COURSES[id] || COURSES.cubbon;
   id = C.id;
   RACE = C.race;
@@ -24,12 +25,14 @@ function loadCourse(id) {
   HAS_ELEV = !!ELEV;
   ELEV_MIN = ELEV ? Math.min(...ELEV.v) : 0;
   clearWorld();
+  yield 0.12;
   FOOT.length = 0;
   srnd = mulberry32(560001);
   BASEY = null;
   const p = C.path();
   setPath(p.raw, p.raceRaw);
   if (C.prep) C.prep();
+  yield 0.3;
   scene.background.set(C.sky);
   scene.fog.color.set(C.sky);
   scene.fog.near = C.fog[0];
@@ -37,7 +40,9 @@ function loadCourse(id) {
   camera.far = Math.max(420, C.fog[1] + 80);
   camera.updateProjectionMatrix();
   buildGround();
+  yield 0.5;
   C.build();
+  yield 0.85;
   clouds();
   flushBatches();
   train.forEach(c => (c.visible = id === 'cubbon'));
@@ -56,6 +61,18 @@ function loadCourse(id) {
   drawMiniBg();
   newRace();
   camInit = false;
+  yield 1;
+}
+// build a route behind the lacing screen; resolves once the screen has faded out
+const paintFrame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+async function loadCourse(id) {
+  loaderShow(`Lacing up for ${(COURSES[id] || COURSES.cubbon).name}`);
+  await paintFrame();
+  for (const t of courseSteps(id)) {
+    loaderProgress(t);
+    await paintFrame();
+  }
+  await loaderDone();
 }
 // ---------- challenge links: ?r=route&t=seconds&n=name ----------
 const QS = new URLSearchParams(location.search);
@@ -125,15 +142,8 @@ function openRoutes(from) {
 let routeFrom = 'startScreen';
 function pickRoute(id) {
   $('routeScreen').hidden = true;
-  if (!C || C.id !== id) {
-    $('building').hidden = false;
-    $('buildingText').textContent = `Building ${COURSES[id].name}…`;
-    setTimeout(() => {
-      loadCourse(id);
-      $('building').hidden = true;
-      startRace();
-    }, 30);
-  } else startRace();
+  if (!C || C.id !== id) loadCourse(id).then(startRace);
+  else startRace();
 }
 $('routeBack').addEventListener('click', () => {
   $('routeScreen').hidden = true;
