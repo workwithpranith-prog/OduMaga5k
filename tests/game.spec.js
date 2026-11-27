@@ -68,15 +68,13 @@ for (const id of ROUTES) {
     await expect(page.locator('#elevChip')).toBeVisible({ visible: id !== 'cubbon' });
     await expect(page.locator('#miniMap')).toBeVisible({ visible: id !== 'cubbon' });
     await info.attach(`${id}.png`, { body: await page.screenshot(), contentType: 'image/png' });
-    // Back during a run asks first, then quits to the route picker
-    await page.click('#backBtn');
-    await expect(page.locator('#backBtn')).toHaveText('Tap again to quit');
-    await expect(page.locator('#routeScreen')).toBeHidden();
-    await page.click('#backBtn');
-    await expect(page.locator('#routeScreen')).toBeVisible();
-    await page.click('#backBtn'); // and from the route picker, back home
-    await expect(page.locator('#startScreen')).toBeVisible();
+    // no Back/Quit button during a run: Time sits in the top-left corner, Distance right next to it
     await expect(page.locator('#backBtn')).toBeHidden();
+    const time = await page.locator('#hTime').locator('..').boundingBox(),
+      dist = await page.locator('#hKm').locator('../..').boundingBox();
+    expect(time.x).toBeLessThan(20);
+    expect(dist.x).toBeGreaterThan(time.x + time.width - 1);
+    expect(Math.abs(dist.y - time.y)).toBeLessThan(2);
     expect(errors).toEqual([]);
   });
 }
