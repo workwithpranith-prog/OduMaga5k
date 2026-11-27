@@ -1,7 +1,8 @@
 'use strict';
 // ================= control centre (admin.html) =================
-// Asks the database for the dashboard (admin_dashboard in supabase/control_centre.sql). The database checks the
-// password and sends back totals only. Filters: route (or all routes) and period. Charts are plain SVG.
+// Asks the database for the dashboard (admin_dashboard in supabase/control_centre.sql) and the latest leaderboard
+// entries, with a switch to hide one (admin_scores / admin_hide_score in supabase/security_scores.sql). The database
+// checks the password, locks after 10 wrong tries in 15 minutes, and sends back totals only. Filters: route (or all routes) and period. Charts are plain SVG.
 const SUPA_URL = 'https://oqtgoxtpxbhdtcbsftov.supabase.co';
 const SUPA_KEY = 'sb_publishable_EYlUoDUcshueEEHT7DB4UQ_nWzDQQxv';
 const $ = id => document.getElementById(id);
@@ -408,24 +409,36 @@ function render(d) {
 }
 
 // ---------- talking to the database ----------
+// every admin call: the database checks the password and answers {error: 'wrong_password' | 'locked'} when it's wrong
+async function rpc(fn, args) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { apikey: SUPA_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_pass: pass, ...args })
+  });
+  const body = await r.json().catch(() => null);
+  if (!r.ok && !(body && body.code === '28P01')) throw new Error((body && body.message) || r.status);
+  const err = body && (body.code === '28P01' ? 'wrong_password' : body.error);
+  if (err) throw Object.assign(new Error(err), { locked: true, why: err });
+  return body;
+}
+const lockMsg = e =>
+  e.why === 'locked'
+    ? 'Too many wrong tries. The control centre is locked for 15 minutes.'
+    : 'Wrong password. Try again.';
 async function load() {
   if (busy) return;
   busy = true;
   $('refresh').disabled = true;
   try {
-    const r = await fetch(`${SUPA_URL}/rest/v1/rpc/admin_dashboard`, {
-      method: 'POST',
-      headers: { apikey: SUPA_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ p_pass: pass, p_route: view.route || null, p_days: view.days ? Number(view.days) : null })
-    });
-    const body = await r.json().catch(() => null);
-    if (!r.ok) {
-      if (body && body.code === '28P01') return lock('Wrong password. Try again.');
-      throw new Error((body && body.message) || r.status);
-    }
+    const route = view.route || null;
+    const d = await rpc('admin_dashboard', { p_route: route, p_days: view.days ? Number(view.days) : null });
     showDash();
-    render(body);
+    render(d);
+    const sc = await rpc('admin_scores', { p_route: route, p_limit: 50 });
+    scoresTable(sc.scores || []);
   } catch (e) {
+    if (e.locked) return lock(lockMsg(e));
     if ($('dash').hidden) $('lockMsg').textContent = "Couldn't reach the database. Check your connection.";
     else $('upd').textContent = "Couldn't refresh. Showing the last numbers.";
   } finally {
@@ -434,6 +447,42 @@ async function load() {
     $('unlock').disabled = false;
   }
 }
+
+// ---------- leaderboard entries: hide a score (a rude name, a fake time) or show it again ----------
+function scoresTable(list) {
+  $('scores').innerHTML = list.length
+    ? tableHtml(
+        ['When', 'Route', 'Name', 'Time', 'Checked', ''],
+        list.map(x => [
+          esc(ago(x.at)),
+          `<span class="dot" style="background:${ROUTE[x.route]?.color || 'var(--dnf)'}"></span>${esc(
+            ROUTE[x.route]?.short || x.route
+          )}`,
+          x.hidden ? `<s>${esc(x.name)}</s> <span class="st dnf">hidden</span>` : esc(x.name),
+          fmt(x.time_s),
+          x.checked ? '✓' : '<span class="sub" title="Posted before runs were checked">older</span>',
+          `<button class="ghost hideBtn" type="button" data-id="${Number(x.id)}" data-hide="${x.hidden ? 'false' : 'true'}">${
+            x.hidden ? 'Show' : 'Hide'
+          }</button>`
+        ]),
+        [3]
+      )
+    : '<div class="empty">No times posted yet.</div>';
+}
+$('scores').addEventListener('click', async e => {
+  const b = e.target.closest('button.hideBtn');
+  if (!b) return;
+  b.disabled = true;
+  try {
+    await rpc('admin_hide_score', { p_id: Number(b.dataset.id), p_hidden: b.dataset.hide === 'true' });
+    const sc = await rpc('admin_scores', { p_route: view.route || null, p_limit: 50 });
+    scoresTable(sc.scores || []);
+  } catch (err) {
+    if (err.locked) return lock(lockMsg(err));
+    b.disabled = false;
+    $('upd').textContent = "Couldn't change that score. Try again.";
+  }
+});
 function lock(msg = '') {
   pass = '';
   store.set('odumaga.admin.pass', null);

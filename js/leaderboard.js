@@ -142,8 +142,11 @@ function sb(path, opts = {}) {
     ...(SUPA_KEY.startsWith('eyJ') ? { Authorization: 'Bearer ' + SUPA_KEY } : {}),
     ...(opts.headers || {})
   };
-  return fetch(SUPA_URL.replace(/\/+$/, '') + '/rest/v1/' + path, { ...opts, headers: h }).then(r => {
-    if (!r.ok) throw Object.assign(new Error('http ' + r.status), { status: r.status });
+  return fetch(SUPA_URL.replace(/\/+$/, '') + '/rest/v1/' + path, { ...opts, headers: h }).then(async r => {
+    if (!r.ok) {
+      const body = await r.json().catch(() => null);
+      throw Object.assign(new Error('http ' + r.status), { status: r.status, hint: body && body.hint });
+    }
     return r;
   });
 }
@@ -186,25 +189,16 @@ async function refreshLB(route = boardRoute) {
     renderBoards();
   } catch (e) {}
 }
-async function submitSB(name, time, pace, route) {
-  const body = { name, time_s: time, pace_s: pace };
-  if (routeCol) body.route = route;
-  const r = await sb('scores', {
+// posting a time: the database takes the time from this run's own stats (start, every km, finish) and checks the run
+// really happened, so the game only says which run it was and the name. See supabase/security_scores.sql.
+async function submitSB(name) {
+  const r = await sb('rpc/submit_score', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
-    body: JSON.stringify(body)
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_session: SESSION, p_run_no: runNo, p_name: name })
   });
-  const row = normSB((await r.json())[0]);
-  let rank = null;
-  try {
-    const c = await sb(`scores?select=id&time_s=lt.${time}${rf(route)}`, {
-      headers: { Prefer: 'count=exact', Range: '0-0' }
-    });
-    const n = countOf(c);
-    if (n != null) rank = n + 1;
-  } catch (_) {}
-  if (rank == null) rank = lbOf(route).rows.filter(x => x.time < time).length + 1;
-  return { row, rank };
+  const x = (await r.json())[0];
+  return { row: normSB(x), rank: x.rank || null };
 }
 const canSave = route => mode === 'supa' && (routeCol || route === 'cubbon');
 // --- anonymous run stats (no names): open, start, each km, finish, quit, submit ---

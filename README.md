@@ -25,9 +25,19 @@ On a laptop: space bar to run, arrow keys to change lanes.
 - No build step: `index.html` loads `css/style.css` and the scripts in `js/`, in order. Open `index.html` in a browser to play.
 - 3D: [three.js](https://threejs.org/) r128, loaded from cdnjs.
 - Music and sound effects: an original chiptune for each route, generated live with the Web Audio API.
-- Leaderboard: a [Supabase](https://supabase.com/) table (`scores`: name, time, pace, route, posted at). Anyone can read and add scores; nobody can edit or delete them through the site. Per-route boards use the `route` column added by `supabase/add_route_column.sql`.
+- Leaderboard: a [Supabase](https://supabase.com/) table (`scores`: name, time, pace, route, posted at). Anyone can read scores; nobody can edit or delete them through the site. A time can only be posted through the database function `submit_score`, which takes the time from that run's own play stats and checks the run really happened (see Security below).
 - Play stats: a `run_events` table. The game sends anonymous events (opened, started, each km, finished, quit, posted a time) with a random player code kept on the phone, the link tag (`?ref=`), device type, system, browser, language, time zone and stumble count. No names, no location. Anyone can add events; nobody can read them through the site.
-- Control centre: `admin.html` (not linked from the game). It asks the database function `admin_dashboard` for totals, and the function only answers with the right password. Set up by `supabase/control_centre.sql`, which also shows how to change the password.
+- Control centre: `admin.html` (not linked from the game). It asks the database function `admin_dashboard` for totals, and the function only answers with the right password. Set up by `supabase/control_centre.sql`, which also shows how to change the password. Its Leaderboard entries panel lists the latest 50 times with a Hide / Show switch, for rude names or fake times.
+- Database changes live in `supabase/`, oldest first: `baseline.sql` (the tables as first set up), `add_route_column.sql`, `control_centre.sql`, `security_scores.sql`, `security_lock_inserts.sql`. Every change to the live database gets a file here.
+
+### Security
+
+- **Times are checked, not trusted.** The game sends only which run it was and the name. The database takes the time from the run's own finish stats and accepts it only if the run has a start and a finish on the same route, every km logged, the full distance, a believable number of taps, and enough real time between start and finish (the game clock runs 15x real time, 20x on NICE Road). One post per run.
+- **Sensible limits on every score:** nothing faster than about 2:20/km (the game's top speed), and the pace must match the time.
+- **Spam limits:** 5 posted times an hour from one phone, 300 an hour in all, 400 play-stat events per visit. Visitors can't choose a row's id or timestamp.
+- **Control centre lock:** 10 wrong passwords in 15 minutes locks it for the rest of those 15 minutes. Use a long passphrase.
+- **Page hardening:** a Content-Security-Policy on both pages (code only from the site itself and cdnjs, data only to this Supabase project), and an integrity hash on three.js so the browser refuses a changed copy.
+- The Supabase key in the code is the public (publishable) one. It only allows what the rules above allow.
 - Hosting: [GitHub Pages](https://pages.github.com/), deployed from the `main` branch of this repo. Every merge to `main` goes live in about a minute.
 
 ### Where things live
