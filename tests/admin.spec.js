@@ -69,11 +69,24 @@ test('control centre: wrong password, then the dashboard and its filters', async
   const errors = [],
     calls = [];
   page.on('pageerror', e => errors.push(e.message));
+  page.on('console', m => /Content Security Policy/i.test(m.text()) && errors.push(m.text()));
   await page.route('**/rpc/admin_dashboard', r => {
     const body = JSON.parse(r.request().postData());
     calls.push(body);
-    if (body.p_pass !== 'right') return r.fulfill({ status: 403, json: { code: '28P01', message: 'wrong password' } });
+    if (body.p_pass !== 'right') return r.fulfill({ json: { error: 'wrong_password' } });
     return r.fulfill({ json: FAKE });
+  });
+  const scores = [
+    { id: 5, name: 'Fast Freddy', time_s: 1900, route: 'nice', at: today, hidden: false, checked: true },
+    { id: 4, name: '<i>old</i>', time_s: 900, route: 'cubbon', at: today, hidden: false, checked: false }
+  ];
+  const hides = [];
+  await page.route('**/rpc/admin_scores', r => r.fulfill({ json: { scores } }));
+  await page.route('**/rpc/admin_hide_score', r => {
+    const b = JSON.parse(r.request().postData());
+    hides.push(b);
+    scores.find(x => x.id === b.p_id).hidden = b.p_hidden;
+    return r.fulfill({ json: { ok: true } });
   });
   await page.route('**/fonts.googleapis.com/**', r => r.abort());
   await page.goto(ADMIN);
@@ -91,6 +104,16 @@ test('control centre: wrong password, then the dashboard and its filters', async
   await expect(page.locator('#latest')).toContainText('Finished in 31:40');
   await expect(page.locator('#sources')).toContainText('<b>x</b>'); // shown as text, never as HTML
 
+  // leaderboard entries: names are text, never HTML; Hide takes one off the boards and Show puts it back
+  await expect(page.locator('#scores')).toContainText('Fast Freddy');
+  await expect(page.locator('#scores')).toContainText('<i>old</i>');
+  await page.locator('#scores button.hideBtn').first().click();
+  await expect(page.locator('#scores')).toContainText('hidden');
+  expect(hides.at(-1)).toMatchObject({ p_pass: 'right', p_id: 5, p_hidden: true });
+  await page.locator('#scores button.hideBtn').first().click();
+  await expect(page.locator('#scores')).not.toContainText('hidden');
+  expect(hides.at(-1)).toMatchObject({ p_id: 5, p_hidden: false });
+
   await page.click('#fRoute button[data-v="nice"]');
   await page.click('#fDays button[data-v="7"]');
   await expect.poll(() => calls.at(-1)).toMatchObject({ p_route: 'nice', p_days: 7 });
@@ -102,4 +125,14 @@ test('control centre: wrong password, then the dashboard and its filters', async
   await page.click('#logout');
   await expect(page.locator('#lock')).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test('control centre: too many wrong tries says it is locked', async ({ page }) => {
+  await page.route('**/rpc/admin_dashboard', r => r.fulfill({ json: { error: 'locked' } }));
+  await page.route('**/fonts.googleapis.com/**', r => r.abort());
+  await page.goto(ADMIN);
+  await page.fill('#pass', 'anything');
+  await page.click('#unlock');
+  await expect(page.locator('#lockMsg')).toHaveText(/locked for 15 minutes/);
+  await expect(page.locator('#dash')).toBeHidden();
 });

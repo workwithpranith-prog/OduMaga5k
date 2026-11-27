@@ -299,19 +299,17 @@ async function postTime(raw, auto = false, attempt = 1) {
     $('saveStatus').textContent = 'Add a name first.';
     return;
   }
-  const time = Math.round(R.clock),
-    pace = Math.round(R.clock / C.km),
-    route = C.id;
+  const route = C.id;
   $('submitBtn').disabled = true;
   $('saveStatus').textContent = 'Saving…';
-  const done = (id, rank) => {
+  const done = (row, rank) => {
     savedRun = runNo;
     submitting = false;
     track('submit');
-    myId = id;
+    myId = row.id;
     myRank = rank;
     myRoute = route;
-    lastSubmitted = { id, name, time, pace };
+    lastSubmitted = row;
     setName(name);
     $('saveStatus').textContent = rank ? `Saved as ${name} · #${rank} on the ${C.name} board.` : `Saved as ${name}.`;
     $('nameForm').hidden = true;
@@ -319,23 +317,35 @@ async function postTime(raw, auto = false, attempt = 1) {
   };
   if (mode === 'supa') {
     try {
-      const { row, rank } = await submitSB(name, time, pace, route);
-      done(row.id, rank);
+      const { row, rank } = await submitSB(name);
+      done(row, rank);
       refreshLB(route);
     } catch (err) {
       submitting = false;
       $('submitBtn').disabled = false;
-      const run = runNo;
-      if (auto && attempt < 4 && !(err && err.status === 400)) {
-        $('saveStatus').textContent = 'Could not save just now. Trying again…';
-        setTimeout(() => runNo === run && postTime(name, true, attempt + 1), 3000 * attempt);
+      const run = runNo,
+        hint = err && err.hint,
+        rejected = err && err.status === 400 && hint !== 'run_not_found';
+      if (hint === 'already_saved') {
+        savedRun = runNo;
+        $('saveStatus').textContent = 'This run is already on the board.';
+        $('nameForm').hidden = true;
         return;
       }
-      $('saveStatus').textContent = auto
-        ? "Couldn't save your time. Check your connection."
-        : err && err.status === 400
-          ? "That time couldn't be saved. Check the name and try again."
-          : 'Could not save just now. Check your connection and tap Submit again.';
+      // network trouble, or the finish stats haven't reached the database yet: try again by itself
+      if (!rejected && attempt < 4) {
+        $('saveStatus').textContent = 'Saving…';
+        setTimeout(() => runNo === run && postTime(name, auto, attempt + 1), 2000 * attempt);
+        return;
+      }
+      $('saveStatus').textContent =
+        hint === 'rate_limited'
+          ? 'Lots of times posted from this phone just now. Try again in an hour.'
+          : rejected
+            ? "This run couldn't be checked, so it can't go on the board."
+            : auto
+              ? "Couldn't save your time. Check your connection."
+              : 'Could not save just now. Check your connection and tap Submit again.';
     }
   }
 }

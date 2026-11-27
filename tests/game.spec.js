@@ -8,10 +8,12 @@ const fs = require('fs');
 const GAME = 'file://' + path.resolve(__dirname, '..', 'index.html');
 const THREE_JS = fs.readFileSync(require.resolve('three/build/three.min.js'));
 const ROUTES = ['cubbon', 'ulsoor', 'nice'];
+const CORS = { 'Access-Control-Allow-Origin': '*' }; // three.js is loaded with an integrity check, which needs CORS
 
 async function openGame(page, { countMusic = false } = {}) {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
+  page.on('console', m => /Content Security Policy|integrity/i.test(m.text()) && errors.push(m.text())); // blocked
   if (countMusic) {
     // the music scheduler is the only 25 ms interval: count how many are running
     await page.addInitScript(() => {
@@ -29,7 +31,9 @@ async function openGame(page, { countMusic = false } = {}) {
       };
     });
   }
-  await page.route('**/three.min.js', r => r.fulfill({ body: THREE_JS, contentType: 'application/javascript' }));
+  await page.route('**/three.min.js', r =>
+    r.fulfill({ body: THREE_JS, contentType: 'application/javascript', headers: CORS })
+  );
   await page.route('**/*supabase.co/**', r => r.abort());
   await page.goto(GAME);
   await expect(page.locator('#startBtn')).toBeEnabled({ timeout: 60_000 });
@@ -126,4 +130,78 @@ test('opens on the intro screen; runner name is asked once and remembered after 
   await page.click('#runnerChange');
   await expect(page.locator('#runnerName')).toHaveValue('Pranith K');
   expect(errors).toEqual([]);
+});
+
+// Posting a time with a stand-in database: the game must send only which run it was and the name (never a time),
+// and keep trying while the run's finish stats are still on their way.
+test('posting a time: sends the run, not the time, and retries until the run has arrived', async ({ page }) => {
+  const errors = [],
+    events = [],
+    submits = [];
+  page.on('pageerror', e => errors.push(e.message));
+  page.on('console', m => /Content Security Policy|integrity/i.test(m.text()) && errors.push(m.text()));
+  await page.route('**/three.min.js', r =>
+    r.fulfill({ body: THREE_JS, contentType: 'application/javascript', headers: CORS })
+  );
+  await page.route('**/*supabase.co/**', r => {
+    const url = r.request().url(),
+      method = r.request().method();
+    if (url.includes('/rpc/submit_score')) {
+      submits.push(JSON.parse(r.request().postData()));
+      if (submits.length === 1)
+        return r.fulfill({ status: 400, json: { code: 'P0001', message: 'run not found', hint: 'run_not_found' } });
+      return r.fulfill({ json: [{ id: 77, name: 'Tester', time_s: 600, pace_s: 200, route: 'ulsoor', rank: 3 }] });
+    }
+    if (url.includes('/run_events')) {
+      events.push(JSON.parse(r.request().postData()).event);
+      return r.fulfill({ status: 201, body: '' });
+    }
+    if (method === 'POST') return r.fulfill({ status: 403, json: { message: 'direct inserts are closed' } });
+    return r.fulfill({ json: [], headers: { 'content-range': '0-0/0' } });
+  });
+  await page.goto(GAME);
+  await expect(page.locator('#startBtn')).toBeEnabled({ timeout: 60_000 });
+  await page.fill('#runnerName', 'Tester');
+  await page.click('#runnerSave');
+  await pickRoute(page, 'ulsoor');
+  await runFor(page, 3);
+  await page.evaluate(() => (R.s = RACE - 40)); // skip to the last few metres
+  await runFor(page, 60, () => page.locator('#finishScreen').isVisible());
+  await expect(page.locator('#saveStatus')).toHaveText('Saved as Tester · #3 on the Ulsoor Lake board.', {
+    timeout: 15_000
+  });
+  expect(submits.length).toBe(2);
+  expect(Object.keys(submits[1]).sort()).toEqual(['p_name', 'p_run_no', 'p_session']);
+  expect(submits[1]).toMatchObject({ p_name: 'Tester', p_run_no: 1 });
+  expect(events).toEqual(expect.arrayContaining(['start', 'finish', 'submit']));
+  expect(errors).toEqual([]);
+});
+
+test('posting a time: a run that fails the check says so and does not retry', async ({ page }) => {
+  let submits = 0;
+  await page.route('**/three.min.js', r =>
+    r.fulfill({ body: THREE_JS, contentType: 'application/javascript', headers: CORS })
+  );
+  await page.route('**/*supabase.co/**', r => {
+    const url = r.request().url();
+    if (url.includes('/rpc/submit_score')) {
+      submits++;
+      return r.fulfill({ status: 400, json: { code: 'P0001', message: 'run does not check out' } });
+    }
+    if (url.includes('/run_events')) return r.fulfill({ status: 201, body: '' });
+    return r.fulfill({ json: [], headers: { 'content-range': '0-0/0' } });
+  });
+  await page.goto(GAME);
+  await expect(page.locator('#startBtn')).toBeEnabled({ timeout: 60_000 });
+  await page.fill('#runnerName', 'Tester');
+  await page.click('#runnerSave');
+  await pickRoute(page, 'ulsoor');
+  await runFor(page, 3);
+  await page.evaluate(() => (R.s = RACE - 40));
+  await runFor(page, 60, () => page.locator('#finishScreen').isVisible());
+  await expect(page.locator('#saveStatus')).toHaveText("This run couldn't be checked, so it can't go on the board.", {
+    timeout: 15_000
+  });
+  await page.waitForTimeout(3000);
+  expect(submits).toBe(1);
 });
