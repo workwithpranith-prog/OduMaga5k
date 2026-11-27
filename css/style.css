@@ -883,19 +883,12 @@ input {
   cursor: pointer;
   box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);
 }
-.backbtn.armed {
-  background: var(--run);
-  color: #fff;
-}
 .backbtn:focus-visible {
   outline: 3px solid var(--paper);
   outline-offset: 2px;
 }
 .overlay {
   padding-top: calc(env(safe-area-inset-top, 0px) + 56px);
-}
-.hud .row:first-child {
-  margin-left: 86px;
 }
 /* finish: photo grid, one-line treat */
 .photos {
