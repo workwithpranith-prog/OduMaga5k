@@ -1,5 +1,6 @@
 -- Odu Maga: harder-to-fake leaderboards, spam limits, a hide switch and a password lockout for the control centre.
 -- Applied to the live project on 2026-11-27 as migrations "security_scores" and "scores_public_columns_only".
+-- (Its spam limits, section 4 and the check in section 5, were later removed by remove_spam_limits.sql.)
 -- Part 1 of 2. Safe to apply while the old game is live: the old way of posting keeps working until part 2
 -- (security_lock_inserts.sql), which is applied once the new game code is on GitHub Pages.
 --
