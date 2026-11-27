@@ -28,7 +28,7 @@ create policy "Anyone can read scores" on public.scores for select to anon, auth
 create policy "Anyone can add a score" on public.scores for insert to anon, authenticated
   with check (char_length(btrim(name)) between 1 and 20);
 revoke all on public.scores from anon, authenticated;
-grant select (id, name, time_s, pace_s, created_at, route) on public.scores to anon, authenticated;
+grant select on public.scores to anon, authenticated; -- whole table; narrowed to columns in security_scores.sql
 grant insert (id, name, time_s, pace_s, created_at, route) on public.scores to anon, authenticated;
 
 -- anonymous run stats: no names. One row per open / start / km / finish / quit / submit.

@@ -1,4 +1,5 @@
 -- Odu Maga: harder-to-fake leaderboards, spam limits, a hide switch and a password lockout for the control centre.
+-- Applied to the live project on 2026-11-27 as migrations "security_scores" and "scores_public_columns_only".
 -- Part 1 of 2. Safe to apply while the old game is live: the old way of posting keeps working until part 2
 -- (security_lock_inserts.sql), which is applied once the new game code is on GitHub Pages.
 --
@@ -36,6 +37,9 @@ create unique index if not exists scores_one_per_run on public.scores (session, 
 create index if not exists scores_player_idx on public.scores (player, created_at);
 drop policy if exists "Anyone can read scores" on public.scores;
 create policy "Anyone can read scores" on public.scores for select to anon, authenticated using (not hidden);
+-- visitors read only the public columns (reading was granted on the whole table, which would include new columns)
+revoke select on public.scores from anon, authenticated;
+grant select (id, name, time_s, pace_s, created_at, route) on public.scores to anon, authenticated;
 
 -- 4. run stats: at most 400 events per visit (a 10K run sends about 13, so ~30 runs). The codes themselves are
 --    already checked (run_events_session_check, run_events_run_no_check in baseline.sql).
